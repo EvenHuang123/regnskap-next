@@ -1735,7 +1735,7 @@ export default function AppShell({ user, currentMonth, initialProfil, initialMaa
   return (
     <div style={{ minHeight:'100vh', background:C.navy }}>
       {/* Header */}
-      <header className="app-header" style={{ position:'sticky', top:0, zIndex:50, borderBottom:`1px solid ${C.border}`, padding:'0 32px', display:'flex', justifyContent:'space-between', alignItems:'center', background:`${C.navy}E8`, backdropFilter:'blur(14px)' }}>
+      <header style={{ position:'sticky', top:0, zIndex:50, borderBottom:`1px solid ${C.border}`, padding:'0 32px', height:64, display:'flex', justifyContent:'space-between', alignItems:'center', background:`${C.navy}E8`, backdropFilter:'blur(14px)' }}>
         <div style={{ display:'flex', alignItems:'center', gap:12 }}>
           <div style={{ width:34, height:34, background:C.amber, borderRadius:9, display:'flex', alignItems:'center', justifyContent:'center', fontSize:18, fontWeight:700, color:C.navy }}>R</div>
           <div>
@@ -1743,8 +1743,10 @@ export default function AppShell({ user, currentMonth, initialProfil, initialMaa
             <div style={{ fontSize:9, color:C.grayD, letterSpacing:'0.14em', textTransform:'uppercase' }}>{btypeEntry ? `${btypeEntry.icon} ${profil.selskapsform||''}` : 'Regnskapsverktøy'}</div>
           </div>
         </div>
-        <MonthSelector month={month} onChange={setMonth} saved={saved}/>
-        <div style={{ display:'flex', alignItems:'center', gap:16 }}>
+        <div className="header-month">
+          <MonthSelector month={month} onChange={setMonth} saved={saved}/>
+        </div>
+        <div className="header-right" style={{ display:'flex', alignItems:'center', gap:16 }}>
           <div style={{ fontSize:11, color:C.grayD, textAlign:'right', lineHeight:1.6 }}>
             {saved.length > 0 ? `${saved.length} mnd. lagret` : 'Ingen data ennå'}
           </div>

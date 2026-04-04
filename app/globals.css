@@ -1,5 +1,5 @@
 *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; font-family: 'Cabinet Grotesk', sans-serif !important; }
-html { font-size: 16px; }
+html { font-size: 16px; overflow-x: hidden; max-width: 100vw; }
 body {
   background: #141414;
   color: #F5F5F5;
@@ -7,6 +7,7 @@ body {
   min-height: 100vh;
   -webkit-font-smoothing: antialiased;
   overflow-x: hidden;
+  max-width: 100vw;
 }
 ::-webkit-scrollbar { width: 6px; height: 6px; }
 ::-webkit-scrollbar-track { background: #141414; }
@@ -28,8 +29,8 @@ input[type=number] { -moz-appearance: textfield; }
 .fade-in { animation: fadeIn 0.3s ease both; }
 ::selection { background: rgba(232,232,232,0.15); }
 
-/* ─── Responsive layout ─────────────────────────────────────── */
-.nav-tabs { overflow-x: auto; -ms-overflow-style: none; scrollbar-width: none; }
+/* ─── Desktop layout (default) ──────────────────────────────── */
+.nav-tabs { display: flex; overflow-x: auto; -ms-overflow-style: none; scrollbar-width: none; }
 .nav-tabs::-webkit-scrollbar { display: none; }
 .nav-tab-btn { white-space: nowrap; flex-shrink: 0; }
 .main-content { padding: 28px 32px 64px; max-width: 1240px; margin: 0 auto; }
@@ -43,12 +44,22 @@ input[type=number] { -moz-appearance: textfield; }
 .month-cal-grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 12px; }
 .cash-proj-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 10px; margin-top: 16px; }
 
+/* ─── Mobile (max 768px) ─────────────────────────────────────── */
 @media (max-width: 768px) {
-  .app-header { padding: 0 16px !important; min-height: 64px; flex-wrap: wrap; gap: 8px; }
-  .main-content { padding: 16px 16px 48px; }
+  /* Header: show only logo, hide month selector and right section */
+  .header-month { display: none; }
+  .header-right { display: none !important; }
+
+  /* Nav: horizontal scrollable row, never wraps */
+  .nav-tabs { width: 100%; max-width: 100vw; }
+
+  /* Main content */
+  .main-content { padding: 16px 16px 48px; width: 100%; max-width: 100%; }
+
+  /* Grids collapse to single or double column */
   .kpi-grid { grid-template-columns: 1fr 1fr; gap: 10px; margin-bottom: 16px; }
   .chart-grid { grid-template-columns: 1fr; gap: 12px; }
-  .trend-grid { grid-template-columns: repeat(2, 1fr); gap: 12px; }
+  .trend-grid { grid-template-columns: 1fr 1fr; gap: 12px; }
   .two-col { grid-template-columns: 1fr; gap: 16px; }
   .two-col-eq { grid-template-columns: 1fr; gap: 12px; }
   .form-grid { grid-template-columns: 1fr; }
@@ -60,5 +71,5 @@ input[type=number] { -moz-appearance: textfield; }
 @media (max-width: 480px) {
   .kpi-grid { grid-template-columns: 1fr 1fr; gap: 8px; }
   .month-cal-grid { grid-template-columns: repeat(2, 1fr); }
-  .trend-grid { grid-template-columns: repeat(2, 1fr); }
+  .trend-grid { grid-template-columns: 1fr 1fr; }
 }
