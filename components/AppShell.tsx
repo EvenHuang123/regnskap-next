@@ -105,7 +105,7 @@ const Badge = ({ color, children }: { color: string; children: React.ReactNode }
   <span style={{
     display:'inline-flex', alignItems:'center', gap:6, padding:'4px 12px',
     background:`${color}18`, border:`1px solid ${color}38`, borderRadius:20,
-    fontSize:12, color, fontFamily:'Cabinet Grotesk', fontWeight:500,
+    fontSize:12, color, fontWeight:500,
   }}>{children}</span>
 );
 
@@ -155,7 +155,7 @@ const KPICard = ({ title, value, unit='nok', delta, positive='up', sparkData, sp
   return (
     <Card style={{ padding:'20px 22px' }}>
       <div style={{ fontSize:10, letterSpacing:'0.12em', textTransform:'uppercase', color:C.gray, marginBottom:10 }}>{title}</div>
-      <div style={{ fontFamily:'Cabinet Grotesk', fontSize:21, fontWeight:500, color:C.white, lineHeight:1.2 }}>
+      <div style={{ fontSize:21, fontWeight:500, color:C.white, lineHeight:1.2 }}>
         <Counter target={value} fmt={unit==='nok' ? formatNOK : unit==='pct' ? formatPct : (v) => String(Math.round(v))}/>
       </div>
       <div style={{ display:'flex', justifyContent:'space-between', alignItems:'flex-end', marginTop:10 }}>
@@ -175,7 +175,7 @@ const KPICard = ({ title, value, unit='nok', delta, positive='up', sparkData, sp
 const ChartTip = ({ active, payload, label }: { active?: boolean; payload?: Array<{name:string;value:number;color:string}>; label?: string }) => {
   if (!active || !payload?.length) return null;
   return (
-    <div style={{ background:C.navyB, border:`1px solid ${C.navyHL}`, borderRadius:10, padding:'12px 16px', fontSize:12, fontFamily:'Cabinet Grotesk', boxShadow:'0 8px 32px rgba(0,0,0,.5)' }}>
+    <div style={{ background:C.navyB, border:`1px solid ${C.navyHL}`, borderRadius:10, padding:'12px 16px', fontSize:12, boxShadow:'0 8px 32px rgba(0,0,0,.5)' }}>
       <div style={{ color:C.gray, fontSize:10, letterSpacing:'0.08em', marginBottom:8, textTransform:'uppercase' }}>{label}</div>
       {payload.map((e,i) => (
         <div key={i} style={{ color:e.color, marginBottom:3 }}>
@@ -206,7 +206,7 @@ const RevenueChart = ({ data }: { data: MonthData[] }) => {
         <XAxis dataKey="name" tick={{ fill:C.gray, fontSize:11, fontFamily:'Cabinet Grotesk' }} axisLine={false} tickLine={false}/>
         <YAxis tick={{ fill:C.gray, fontSize:10, fontFamily:'Cabinet Grotesk' }} axisLine={false} tickLine={false} tickFormatter={v=>`${(v/1000).toFixed(0)}k`}/>
         <Tooltip content={<ChartTip/>}/>
-        <Legend iconType="circle" iconSize={7} wrapperStyle={{ fontSize:11, fontFamily:'Cabinet Grotesk', color:C.gray, paddingTop:8 }}/>
+        <Legend iconType="circle" iconSize={7} wrapperStyle={{ fontSize:11, color:C.gray, paddingTop:8 }}/>
         <Area type="monotone" dataKey="Inntekter" stroke={C.amber} fill="url(#gI)" strokeWidth={2} dot={{ fill:C.amber, r:3, strokeWidth:0 }} activeDot={{ r:5 }}/>
         <Area type="monotone" dataKey="Totale kostnader" stroke={C.red} fill="url(#gK)" strokeWidth={2} dot={{ fill:C.red, r:3, strokeWidth:0 }} activeDot={{ r:5 }}/>
       </AreaChart>
@@ -225,7 +225,7 @@ const CostChart = ({ data, fasteSum = 0 }: { data: MonthData[]; fasteSum?: numbe
         <XAxis dataKey="name" tick={{ fill:C.gray, fontSize:11, fontFamily:'Cabinet Grotesk' }} axisLine={false} tickLine={false}/>
         <YAxis tick={{ fill:C.gray, fontSize:10, fontFamily:'Cabinet Grotesk' }} axisLine={false} tickLine={false} tickFormatter={v=>`${(v/1000).toFixed(0)}k`}/>
         <Tooltip content={<ChartTip/>}/>
-        <Legend iconType="square" iconSize={8} wrapperStyle={{ fontSize:11, fontFamily:'Cabinet Grotesk', color:C.gray, paddingTop:8 }}/>
+        <Legend iconType="square" iconSize={8} wrapperStyle={{ fontSize:11, color:C.gray, paddingTop:8 }}/>
         {keys.map((k,i) => (
           <Bar key={k} dataKey={k} stackId="a" fill={barColors[i]} radius={i===keys.length-1 ? [4,4,0,0] : [0,0,0,0]}/>
         ))}
@@ -243,7 +243,7 @@ const MonthSelector = ({ month, onChange, saved }: { month: string; onChange: (m
   };
   const BtnStyle: React.CSSProperties = {
     background:'transparent', border:`1px solid ${C.border}`, borderRadius:7,
-    color:C.gray, cursor:'pointer', padding:'5px 12px', fontSize:15, transition:'all 0.15s', fontFamily:'Cabinet Grotesk',
+    color:C.gray, cursor:'pointer', padding:'5px 12px', fontSize:15, transition:'all 0.15s',
   };
   return (
     <div style={{ display:'flex', alignItems:'center', gap:10 }}>
@@ -252,7 +252,7 @@ const MonthSelector = ({ month, onChange, saved }: { month: string; onChange: (m
         onMouseLeave={e=>{(e.currentTarget as HTMLButtonElement).style.borderColor=C.border;(e.currentTarget as HTMLButtonElement).style.color=C.gray;}}
         onClick={()=>nav(-1)}>←</button>
       <div style={{ textAlign:'center', minWidth:170 }}>
-        <div style={{ fontFamily:'Cabinet Grotesk', fontSize:18, color:C.white, display:'flex', alignItems:'center', justifyContent:'center', gap:8 }}>
+        <div style={{ fontSize:18, color:C.white, display:'flex', alignItems:'center', justifyContent:'center', gap:8 }}>
           {fmtMonthFull(month)}
           {saved.includes(month) && <span style={{ width:6, height:6, borderRadius:'50%', background:C.amber, display:'inline-block', verticalAlign:'middle' }}/>}
         </div>
@@ -288,8 +288,8 @@ const InputField = ({ label, hint, value, onChange }: { label:string; hint?:stri
       <div style={{ position:'relative' }}>
         <input type="number" min="0" step="1" value={value} onChange={e=>onChange(e.target.value)} placeholder="0"
           onFocus={()=>setFocus(true)} onBlur={()=>setFocus(false)}
-          style={{ width:'100%', background:C.navy, border:`1px solid ${focus?C.amber:C.border}`, borderRadius:8, padding:'9px 50px 9px 12px', fontFamily:'Cabinet Grotesk', fontSize:14, color:C.white, outline:'none', transition:'border-color 0.15s' }}/>
-        <span style={{ position:'absolute', right:12, top:'50%', transform:'translateY(-50%)', color:C.grayD, fontSize:11, fontFamily:'Cabinet Grotesk', pointerEvents:'none' }}>kr</span>
+          style={{ width:'100%', background:C.navy, border:`1px solid ${focus?C.amber:C.border}`, borderRadius:8, padding:'9px 50px 9px 12px', fontSize:14, color:C.white, outline:'none', transition:'border-color 0.15s' }}/>
+        <span style={{ position:'absolute', right:12, top:'50%', transform:'translateY(-50%)', color:C.grayD, fontSize:11, pointerEvents:'none' }}>kr</span>
       </div>
     </div>
   );
@@ -298,7 +298,7 @@ const InputField = ({ label, hint, value, onChange }: { label:string; hint?:stri
 const DerivedRow = ({ label, value, color, note, unit='nok' }: { label:string; value:number; color:string; note?:string; unit?:string }) => (
   <div style={{ padding:'14px 16px', background:C.navy, borderRadius:10, borderLeft:`3px solid ${color}`, marginBottom:10 }}>
     <div style={{ fontSize:10, color:C.gray, textTransform:'uppercase', letterSpacing:'0.1em', marginBottom:3 }}>{label}</div>
-    <div style={{ fontFamily:'Cabinet Grotesk', fontSize:22, color, fontWeight:500 }}>
+    <div style={{ fontSize:22, color, fontWeight:500 }}>
       <Counter target={value} fmt={unit==='pct' ? formatPct : formatNOK}/>
     </div>
     {note && <div style={{ fontSize:10, color:C.grayD, marginTop:3 }}>{note}</div>}
@@ -366,10 +366,10 @@ const DataEntry = ({ month, currentData, faste, ansatte, onSave, onDelete }: Dat
   };
 
   return (
-    <div className="fade-in" style={{ display:'grid', gridTemplateColumns:'1fr 1fr', gap:24, alignItems:'start' }}>
+    <div className="fade-in two-col">
       <Card hover={false}>
         <div style={{ display:'flex', justifyContent:'space-between', alignItems:'flex-start', marginBottom:22 }}>
-          <h3 style={{ fontFamily:'Cabinet Grotesk', fontSize:20 }}>Månedstall — {fmtMonthFull(month)}</h3>
+          <h3 style={{ fontSize:20 }}>Månedstall — {fmtMonthFull(month)}</h3>
           {fasteSum > 0 && (
             <span style={{ fontSize:11, color:'#F5A623', background:'#1A1200', border:'1px solid #3D2E00', borderRadius:6, padding:'3px 10px', whiteSpace:'nowrap' }}>
               Faste: {formatNOK(fasteSum)}/mnd
@@ -383,11 +383,11 @@ const DataEntry = ({ month, currentData, faste, ansatte, onSave, onDelete }: Dat
             <div style={{ color:C.gray, fontSize:12, marginBottom:10 }}>Beregnet lønnskostnad: <strong style={{ color:C.white }}>{formatNOK(ansatteTotal)}</strong> — vil du bruke dette?</div>
             <div style={{ display:'flex', gap:8 }}>
               <button onClick={()=>{setForm(p=>({...p,lønnskostnader:String(ansatteTotal)}));setLønnsPrompt(false);setUseAnsatte(true);}}
-                style={{ flex:1, padding:'7px', background:C.white, color:C.navy, border:'none', borderRadius:7, fontFamily:'Cabinet Grotesk', fontSize:12, fontWeight:700, cursor:'pointer' }}>
+                style={{ flex:1, padding:'7px', background:C.white, color:C.navy, border:'none', borderRadius:7, fontSize:12, fontWeight:700, cursor:'pointer' }}>
                 Bruk {formatNOK(ansatteTotal)}
               </button>
               <button onClick={()=>setLønnsPrompt(false)}
-                style={{ flex:1, padding:'7px', background:'transparent', color:C.gray, border:`1px solid ${C.border}`, borderRadius:7, fontFamily:'Cabinet Grotesk', fontSize:12, cursor:'pointer' }}>
+                style={{ flex:1, padding:'7px', background:'transparent', color:C.gray, border:`1px solid ${C.border}`, borderRadius:7, fontSize:12, cursor:'pointer' }}>
                 Behold eksisterende
               </button>
             </div>
@@ -439,7 +439,7 @@ const DataEntry = ({ month, currentData, faste, ansatte, onSave, onDelete }: Dat
         )}
 
         <button onClick={save} disabled={num.inntekter===0||status==='saving'}
-          style={{ width:'100%', marginTop:8, padding:'12px', background:status==='saved'?C.green:num.inntekter>0?C.white:C.grayD, color:status==='saved'?'#fff':C.navy, border:'none', borderRadius:8, fontFamily:'Cabinet Grotesk', fontSize:13, fontWeight:700, cursor:num.inntekter>0?'pointer':'not-allowed', transition:'all 0.2s', letterSpacing:'0.04em' }}>
+          style={{ width:'100%', marginTop:8, padding:'12px', background:status==='saved'?C.green:num.inntekter>0?C.white:C.grayD, color:status==='saved'?'#fff':C.navy, border:'none', borderRadius:8, fontSize:13, fontWeight:700, cursor:num.inntekter>0?'pointer':'not-allowed', transition:'all 0.2s', letterSpacing:'0.04em' }}>
           {status==='saved' ? '✓  Lagret' : status==='saving' ? '…' : 'Lagre måned'}
         </button>
 
@@ -447,7 +447,7 @@ const DataEntry = ({ month, currentData, faste, ansatte, onSave, onDelete }: Dat
           <div style={{ marginTop:10 }}>
             {!delStep ? (
               <button onClick={()=>setDelStep(true)}
-                style={{ width:'100%', padding:'10px', background:'transparent', border:`1px solid ${C.border}`, borderRadius:8, color:C.grayD, fontFamily:'Cabinet Grotesk', fontSize:12, fontWeight:500, cursor:'pointer', transition:'all 0.2s' }}
+                style={{ width:'100%', padding:'10px', background:'transparent', border:`1px solid ${C.border}`, borderRadius:8, color:C.grayD, fontSize:12, fontWeight:500, cursor:'pointer', transition:'all 0.2s' }}
                 onMouseEnter={e=>{(e.currentTarget as HTMLButtonElement).style.borderColor=C.red;(e.currentTarget as HTMLButtonElement).style.color=C.red;}}
                 onMouseLeave={e=>{(e.currentTarget as HTMLButtonElement).style.borderColor=C.border;(e.currentTarget as HTMLButtonElement).style.color=C.grayD;}}>
                 Slett månedsdata
@@ -455,11 +455,11 @@ const DataEntry = ({ month, currentData, faste, ansatte, onSave, onDelete }: Dat
             ) : (
               <div style={{ display:'flex', gap:8 }}>
                 <button onClick={()=>{ setDelStep(false); onDelete(month); }}
-                  style={{ flex:1, padding:'10px', background:C.red, border:'none', borderRadius:8, color:'#fff', fontFamily:'Cabinet Grotesk', fontSize:12, fontWeight:700, cursor:'pointer' }}>
+                  style={{ flex:1, padding:'10px', background:C.red, border:'none', borderRadius:8, color:'#fff', fontSize:12, fontWeight:700, cursor:'pointer' }}>
                   Ja, slett alt
                 </button>
                 <button onClick={()=>setDelStep(false)}
-                  style={{ flex:1, padding:'10px', background:'transparent', border:`1px solid ${C.border}`, borderRadius:8, color:C.gray, fontFamily:'Cabinet Grotesk', fontSize:12, cursor:'pointer' }}>
+                  style={{ flex:1, padding:'10px', background:'transparent', border:`1px solid ${C.border}`, borderRadius:8, color:C.gray, fontSize:12, cursor:'pointer' }}>
                   Avbryt
                 </button>
               </div>
@@ -470,7 +470,7 @@ const DataEntry = ({ month, currentData, faste, ansatte, onSave, onDelete }: Dat
 
       <div>
         <Card hover={false} style={{ marginBottom:16 }}>
-          <h3 style={{ fontFamily:'Cabinet Grotesk', fontSize:18, marginBottom:18 }}>Nøkkeltall</h3>
+          <h3 style={{ fontSize:18, marginBottom:18 }}>Nøkkeltall</h3>
           <DerivedRow label="Bruttofortjeneste"        value={dr.bruttofortjeneste}  color={C.amber}  note="Inntekter minus varekostnader"/>
           <DerivedRow label="Driftsresultat (EBIT)"    value={dr.driftsresultat}     color={dr.driftsresultat>=0?C.green:C.red} note={`Inkl. faste kostnader ${fasteSum>0?'('+formatNOK(fasteSum)+')':''}`}/>
           <DerivedRow label="Skyldig MVA"               value={dr.netteMva}           color={C.indigo} note="Inntekter × 25 % minus MVA innbetalt"/>
@@ -507,7 +507,7 @@ const AnalysisText = ({ text }: { text: string }) => {
         const color = s.heading.startsWith('🔍') ? C.amber : s.heading.startsWith('📊') ? C.indigo : C.green;
         return (
           <div key={i} style={{ padding:'16px 20px', background:C.navy, borderRadius:10, borderLeft:`3px solid ${color}`, marginBottom:14 }}>
-            <div style={{ fontSize:13, fontWeight:700, color, marginBottom:8, fontFamily:'Cabinet Grotesk' }}>{s.heading}</div>
+            <div style={{ fontSize:13, fontWeight:700, color, marginBottom:8 }}>{s.heading}</div>
             <p style={{ color:C.white, fontSize:14, margin:0, lineHeight:1.8, whiteSpace:'pre-wrap' }}>{s.body}</p>
           </div>
         );
@@ -580,7 +580,7 @@ ${JSON.stringify(prev2.map(fmtMonth), null, 2)}`;
   if (!currentData) return (
     <Card hover={false} style={{ textAlign:'center', padding:48 }}>
       <div style={{ fontSize:40, marginBottom:14 }}>📊</div>
-      <h3 style={{ fontFamily:'Cabinet Grotesk', fontSize:22, marginBottom:10 }}>Ingen data for {fmtMonthFull(month)}</h3>
+      <h3 style={{ fontSize:22, marginBottom:10 }}>Ingen data for {fmtMonthFull(month)}</h3>
       <p style={{ color:C.gray, fontSize:14 }}>Fyll inn månedstall først for å kjøre AI-analyse.</p>
     </Card>
   );
@@ -590,11 +590,11 @@ ${JSON.stringify(prev2.map(fmtMonth), null, 2)}`;
       <Card hover={false}>
         <div style={{ display:'flex', justifyContent:'space-between', alignItems:'flex-start', marginBottom:24 }}>
           <div>
-            <h3 style={{ fontFamily:'Cabinet Grotesk', fontSize:22, marginBottom:4 }}>AI-analyse — {fmtMonthFull(month)}</h3>
+            <h3 style={{ fontSize:22, marginBottom:4 }}>AI-analyse — {fmtMonthFull(month)}</h3>
             {analysis?.generatedAt && <div style={{ fontSize:11, color:C.grayD }}>Sist generert {new Date(analysis.generatedAt).toLocaleString('no-NO')}</div>}
           </div>
           <button onClick={run} disabled={loading}
-            style={{ padding:'9px 20px', background:loading?C.navyB:C.amber, color:loading?C.gray:C.navy, border:'none', borderRadius:8, fontFamily:'Cabinet Grotesk', fontSize:12, fontWeight:500, cursor:loading?'not-allowed':'pointer', transition:'all 0.2s', display:'flex', alignItems:'center', gap:6 }}>
+            style={{ padding:'9px 20px', background:loading?C.navyB:C.amber, color:loading?C.gray:C.navy, border:'none', borderRadius:8, fontSize:12, fontWeight:500, cursor:loading?'not-allowed':'pointer', transition:'all 0.2s', display:'flex', alignItems:'center', gap:6 }}>
             {loading && <span style={{ display:'inline-block', width:10, height:10, borderRadius:'50%', border:`2px solid ${C.navy}`, borderTopColor:'transparent', animation:'spin 0.7s linear infinite' }}/>}
             {loading ? 'Analyserer…' : analysis ? '↺\u00A0Regenerer' : '▶\u00A0Analyser'}
           </button>
@@ -620,7 +620,7 @@ const HistoryTable = ({ allData }: { allData: MonthData[] }) => {
   if (!allData.length) return (
     <Card hover={false} style={{ textAlign:'center', padding:56 }}>
       <div style={{ fontSize:44, marginBottom:14 }}>📚</div>
-      <h3 style={{ fontFamily:'Cabinet Grotesk', fontSize:22, marginBottom:10 }}>Ingen historikk ennå</h3>
+      <h3 style={{ fontSize:22, marginBottom:10 }}>Ingen historikk ennå</h3>
       <p style={{ color:C.gray, fontSize:14 }}>Lagre månedstall for å se historisk oversikt og trendanalyse.</p>
     </Card>
   );
@@ -645,7 +645,7 @@ const HistoryTable = ({ allData }: { allData: MonthData[] }) => {
   return (
     <div className="fade-in">
       <Card hover={false} style={{ padding:0, overflow:'hidden' }}>
-        <div style={{ overflowX:'auto' }}>
+        <div className="history-table-wrap" style={{ overflowX:'auto' }}>
           <table style={{ width:'100%', borderCollapse:'collapse' }}>
             <thead>
               <tr style={{ borderBottom:`1px solid ${C.border}` }}>
@@ -660,7 +660,7 @@ const HistoryTable = ({ allData }: { allData: MonthData[] }) => {
                   <tr key={row.month} style={{ borderBottom:`1px solid ${C.border}` }}
                     onMouseEnter={e=>(e.currentTarget as HTMLTableRowElement).style.background=`${C.navyB}40`}
                     onMouseLeave={e=>(e.currentTarget as HTMLTableRowElement).style.background='transparent'}>
-                    <td style={{ padding:'13px 20px', fontFamily:'Cabinet Grotesk', fontSize:13, color:C.white, whiteSpace:'nowrap', position:'sticky', left:0, background:C.navyL, zIndex:1 }}>{fmtMonthFull(row.month)}</td>
+                    <td style={{ padding:'13px 20px', fontSize:13, color:C.white, whiteSpace:'nowrap', position:'sticky', left:0, background:C.navyL, zIndex:1 }}>{fmtMonthFull(row.month)}</td>
                     {metrics.map(m => {
                       const val  = rowAny[m.k] as number;
                       const pval = (rowAny._prev as Record<string,unknown>)?.[m.k] as number|undefined;
@@ -668,7 +668,7 @@ const HistoryTable = ({ allData }: { allData: MonthData[] }) => {
                       const good = delta !== null && ((m.pos==='up'&&delta>0)||(m.pos==='down'&&delta<0));
                       const bad  = delta !== null && ((m.pos==='up'&&delta<0)||(m.pos==='down'&&delta>0));
                       return (
-                        <td key={m.k} style={{ padding:'13px 18px', textAlign:'right', fontFamily:'Cabinet Grotesk', fontSize:13, color:good?C.green:bad?C.red:C.white, whiteSpace:'nowrap' }}>
+                        <td key={m.k} style={{ padding:'13px 18px', textAlign:'right', fontSize:13, color:good?C.green:bad?C.red:C.white, whiteSpace:'nowrap' }}>
                           {m.fmt(val)}
                           {delta !== null && <span style={{ marginLeft:6, fontSize:10, color:good?C.green:bad?C.red:C.grayD }}>{good?'↑':bad?'↓':'→'}{Math.abs(delta).toFixed(1)}%</span>}
                         </td>
@@ -712,8 +712,8 @@ const ReservationPanel = ({ allData }: { allData: MonthData[] }) => {
         <div>
           <div style={{ fontSize:10, color:accent, textTransform:'uppercase', letterSpacing:'0.12em', marginBottom:4 }}>🔒 MVA-reservasjon · Termin {termLabel}</div>
           {isPaid
-            ? <div style={{ fontFamily:'Cabinet Grotesk', fontSize:18, fontWeight:800, color:C.green }}>MVA er betalt for denne terminen ✅</div>
-            : <div style={{ fontFamily:'Cabinet Grotesk', fontSize:26, fontWeight:800, color:accent }}>{formatNOK(totalMva)}</div>}
+            ? <div style={{ fontSize:18, fontWeight:800, color:C.green }}>MVA er betalt for denne terminen ✅</div>
+            : <div style={{ fontSize:26, fontWeight:800, color:accent }}>{formatNOK(totalMva)}</div>}
           {!isPaid && <div style={{ fontSize:12, color:isUrgent?C.red:'#A37A00', marginTop:4, fontWeight:isUrgent?700:400 }}>Frist: {deadlineStr} — {daysLeft} dager igjen{isUrgent?' ⚠️':''}</div>}
         </div>
         {!isPaid && <div style={{ fontSize:11, color:'#6B5200', textAlign:'right', maxWidth:220, lineHeight:1.6 }}>Skyldig MVA for {termData.length===2?'begge månedene':'måneden'} i terminen</div>}
@@ -824,7 +824,7 @@ const Dashboard = ({ allData, month, faste, profil }: { allData: MonthData[]; mo
   if (!curr && !allData.length) return (
     <div className="fade-in" style={{ textAlign:'center', padding:'80px 0' }}>
       <div style={{ fontSize:64, marginBottom:20 }}>📊</div>
-      <h2 style={{ fontFamily:'Cabinet Grotesk', fontSize:30, marginBottom:14 }}>Kom i gang med Regnskap</h2>
+      <h2 style={{ fontSize:30, marginBottom:14 }}>Kom i gang med Regnskap</h2>
       <p style={{ color:C.gray, fontSize:15, maxWidth:420, margin:'0 auto', lineHeight:1.8 }}>Ingen data registrert ennå. Gå til <strong style={{ color:C.amber }}>Datainntasting</strong> for å legge inn din første måned.</p>
     </div>
   );
@@ -834,7 +834,7 @@ const Dashboard = ({ allData, month, faste, profil }: { allData: MonthData[]; mo
       {curr && <WarningBanner warnings={warnings}/>}
       <ReservationPanel allData={allData}/>
       {curr ? (
-        <div style={{ display:'grid', gridTemplateColumns:'repeat(4,1fr)', gap:16, marginBottom:28 }}>
+        <div className="kpi-grid">
           <KPICard title="Inntekter"   value={curr.inntekter}          unit="nok" delta={delta('inntekter')}           positive="up"   sparkData={sorted as unknown as Record<string,unknown>[]} sparkKey="inntekter"       sparkColor={C.amber}/>
           <KPICard title="EBIT"        value={currDr?.driftsresultat||0} unit="nok" delta={delta('driftsresultat',true)} positive="up"   sparkData={sortedWithDr as unknown as Record<string,unknown>[]} sparkKey="driftsresultat"  sparkColor={(currDr?.driftsresultat||0)>=0?C.green:C.red}/>
           <KPICard title="Lønnsandel"  value={currDr?.lønnsandel||0}   unit="pct" delta={delta('lønnsandel',true)}     positive="down" sparkData={sortedWithDr as unknown as Record<string,unknown>[]} sparkKey="lønnsandel"      sparkColor={C.red}/>
@@ -846,15 +846,15 @@ const Dashboard = ({ allData, month, faste, profil }: { allData: MonthData[]; mo
         </div>
       )}
       {sorted.length > 0 && (
-        <div style={{ display:'grid', gridTemplateColumns:'1fr 1fr', gap:20, marginBottom:20 }}>
-          <Card hover={false}><h3 style={{ fontFamily:'Cabinet Grotesk', fontSize:16, marginBottom:18, color:C.white }}>Inntekter vs. Totale kostnader</h3><RevenueChart data={sorted}/></Card>
-          <Card hover={false}><h3 style={{ fontFamily:'Cabinet Grotesk', fontSize:16, marginBottom:18, color:C.white }}>Kostnadsfordeling per måned</h3><CostChart data={sorted} fasteSum={fasteSum}/></Card>
+        <div className="chart-grid">
+          <Card hover={false}><h3 style={{ fontSize:16, marginBottom:18, color:C.white }}>Inntekter vs. Totale kostnader</h3><RevenueChart data={sorted}/></Card>
+          <Card hover={false}><h3 style={{ fontSize:16, marginBottom:18, color:C.white }}>Kostnadsfordeling per måned</h3><CostChart data={sorted} fasteSum={fasteSum}/></Card>
         </div>
       )}
       {sorted.length >= 2 && (
         <Card hover={false}>
-          <h3 style={{ fontFamily:'Cabinet Grotesk', fontSize:16, marginBottom:20 }}>Nøkkeltrender</h3>
-          <div style={{ display:'grid', gridTemplateColumns:'repeat(4,1fr)', gap:20 }}>
+          <h3 style={{ fontSize:16, marginBottom:20 }}>Nøkkeltrender</h3>
+          <div className="trend-grid">
             {[{ label:'Inntekter', key:'inntekter', color:C.amber }, { label:'Lønnskostnader', key:'lønnskostnader', color:C.red }, { label:'Varekostnader', key:'varekostnader', color:C.indigo }, { label:'Andre kostnader', key:'andreKostnader', color:C.green }].map(({label,key,color}) => {
               const vals = sorted.map(d => (d[key as keyof MonthData] as number)||0);
               const mn = Math.min(...vals), mx = Math.max(...vals), rng = mx-mn||1;
@@ -872,7 +872,7 @@ const Dashboard = ({ allData, month, faste, profil }: { allData: MonthData[]; mo
                     <path d={pathD} stroke={color} strokeWidth={1.5} fill="none" strokeLinejoin="round"/>
                     <circle cx={last.x} cy={last.y} r={3} fill={color}/>
                   </svg>
-                  <div style={{ fontFamily:'Cabinet Grotesk', fontSize:14, color, fontWeight:500 }}>{formatNOK(curr0)}</div>
+                  <div style={{ fontSize:14, color, fontWeight:500 }}>{formatNOK(curr0)}</div>
                   {pct !== null && <div style={{ fontSize:11, color:pct>0?C.green:pct<0?C.red:C.gray, marginTop:3 }}>{pct>0?'↑':pct<0?'↓':'→'}{Math.abs(pct).toFixed(1)}%</div>}
                 </div>
               );
@@ -888,18 +888,18 @@ const Dashboard = ({ allData, month, faste, profil }: { allData: MonthData[]; mo
 const MonthCalendar = ({ allData, month, onNavigate }: { allData: MonthData[]; month: string; onNavigate: (m:string)=>void }) => {
   const [year, setYear] = useState(() => parseInt(month.split('-')[0]));
   const savedSet = new Set(allData.map(d => d.month));
-  const NB: React.CSSProperties = { background:'transparent', border:`1px solid ${C.border}`, borderRadius:7, color:C.gray, cursor:'pointer', padding:'6px 14px', fontSize:13, fontFamily:'Cabinet Grotesk', transition:'all 0.15s' };
+  const NB: React.CSSProperties = { background:'transparent', border:`1px solid ${C.border}`, borderRadius:7, color:C.gray, cursor:'pointer', padding:'6px 14px', fontSize:13, transition:'all 0.15s' };
   return (
     <div className="fade-in">
       <Card hover={false}>
         <div style={{ display:'flex', justifyContent:'space-between', alignItems:'center', marginBottom:24 }}>
-          <h3 style={{ fontFamily:'Cabinet Grotesk', fontSize:20, fontWeight:800 }}>Månedsoversikt {year}</h3>
+          <h3 style={{ fontSize:20, fontWeight:800 }}>Månedsoversikt {year}</h3>
           <div style={{ display:'flex', gap:8, alignItems:'center' }}>
             <button style={NB} onMouseEnter={e=>{(e.currentTarget as HTMLButtonElement).style.borderColor=C.white;(e.currentTarget as HTMLButtonElement).style.color=C.white;}} onMouseLeave={e=>{(e.currentTarget as HTMLButtonElement).style.borderColor=C.border;(e.currentTarget as HTMLButtonElement).style.color=C.gray;}} onClick={()=>setYear(y=>y-1)}>← {year-1}</button>
             <button style={NB} onMouseEnter={e=>{(e.currentTarget as HTMLButtonElement).style.borderColor=C.white;(e.currentTarget as HTMLButtonElement).style.color=C.white;}} onMouseLeave={e=>{(e.currentTarget as HTMLButtonElement).style.borderColor=C.border;(e.currentTarget as HTMLButtonElement).style.color=C.gray;}} onClick={()=>setYear(y=>y+1)}>{year+1} →</button>
           </div>
         </div>
-        <div style={{ display:'grid', gridTemplateColumns:'repeat(4,1fr)', gap:12 }}>
+        <div className="month-cal-grid">
           {MONTHS_NO.map((name,i) => {
             const mKey     = `${year}-${String(i+1).padStart(2,'0')}`;
             const isSaved  = savedSet.has(mKey);
@@ -937,7 +937,8 @@ const MonthCalendar = ({ allData, month, onNavigate }: { allData: MonthData[]; m
 
 // ─── Likviditet Panel ─────────────────────────────────────────────────────────
 const LikviditetPanel = ({ allData }: { allData: MonthData[] }) => {
-  const [saldo,       setSaldo]       = useState(() => lsGet(SLIK) || '');
+  const [saldo,       setSaldo]       = useState('');
+  useEffect(() => { const v = lsGet(SLIK); if (v) setSaldo(v); }, []);
   const [focus,       setFocus]       = useState(false);
   const [aiText,      setAiText]      = useState<{tiltak?:string[]}|null>(null);
   const [aiLoading,   setAiLoading]   = useState(false);
@@ -983,15 +984,15 @@ const LikviditetPanel = ({ allData }: { allData: MonthData[] }) => {
   }, [numSaldo]);
   return (
     <div className="fade-in">
-      <div style={{ display:'grid', gridTemplateColumns:'1fr 1fr', gap:20, marginBottom:20 }}>
+      <div className="two-col-eq" style={{ marginBottom:20 }}>
         <Card hover={false}>
-          <h3 style={{ fontFamily:'Cabinet Grotesk', fontSize:20, fontWeight:800, marginBottom:6 }}>Likviditetsvarsel</h3>
+          <h3 style={{ fontSize:20, fontWeight:800, marginBottom:6 }}>Likviditetsvarsel</h3>
           <p style={{ color:C.gray, fontSize:12, marginBottom:20, lineHeight:1.6 }}>Basert på gjennomsnittlig netto kontantstrøm de siste {last3.length||'—'} månedene.</p>
           <label style={{ fontSize:10, letterSpacing:'0.12em', textTransform:'uppercase', color:C.gray, display:'block', marginBottom:5 }}>Nåværende banksaldo</label>
           <div style={{ position:'relative', marginBottom:18 }}>
             <input type="number" value={saldo} onChange={e=>saveSaldo(e.target.value)} placeholder="0"
               onFocus={()=>setFocus(true)} onBlur={()=>setFocus(false)}
-              style={{ width:'100%', background:C.navy, border:`1px solid ${focus?C.white:C.border}`, borderRadius:8, padding:'10px 45px 10px 12px', fontFamily:'Cabinet Grotesk', fontSize:14, color:C.white, outline:'none' }}/>
+              style={{ width:'100%', background:C.navy, border:`1px solid ${focus?C.white:C.border}`, borderRadius:8, padding:'10px 45px 10px 12px', fontSize:14, color:C.white, outline:'none' }}/>
             <span style={{ position:'absolute', right:12, top:'50%', transform:'translateY(-50%)', color:C.grayD, fontSize:11, pointerEvents:'none' }}>kr</span>
           </div>
           <div style={{ fontSize:12, color:C.gray, marginBottom:16, padding:'10px 14px', background:C.navy, borderRadius:8 }}>
@@ -999,14 +1000,14 @@ const LikviditetPanel = ({ allData }: { allData: MonthData[] }) => {
           </div>
           <div style={{ padding:'20px', background:C.navy, borderRadius:12, border:`2px solid ${statusColor}`, textAlign:'center' }}>
             <div style={{ fontSize:11, color:C.gray, marginBottom:6, textTransform:'uppercase', letterSpacing:'0.1em' }}>Estimert saldo om 90 dager</div>
-            <div style={{ fontFamily:'Cabinet Grotesk', fontSize:30, fontWeight:800, color:statusColor }}>{numSaldo > 0 ? formatNOK(proj90) : '—'}</div>
+            <div style={{ fontSize:30, fontWeight:800, color:statusColor }}>{numSaldo > 0 ? formatNOK(proj90) : '—'}</div>
             {statusEmoji && <div style={{ fontSize:16, marginTop:6 }}>{statusEmoji}</div>}
           </div>
           {zeroMonth && <div style={{ marginTop:14, padding:'12px 16px', background:`${C.red}14`, border:`1px solid ${C.red}35`, borderRadius:10, fontSize:13, color:C.red, lineHeight:1.6 }}>⚠️ Estimert tom for likviditet: <strong>{zeroMonth}</strong></div>}
           {!last3.length && <div style={{ marginTop:14, fontSize:12, color:C.grayD }}>Fyll inn månedstall for å beregne kontantstrøm.</div>}
         </Card>
         <Card hover={false}>
-          <h3 style={{ fontFamily:'Cabinet Grotesk', fontSize:18, fontWeight:800, marginBottom:18 }}>Kontantstrømprognose</h3>
+          <h3 style={{ fontSize:18, fontWeight:800, marginBottom:18 }}>Kontantstrømprognose</h3>
           {numSaldo > 0 ? (
             <>
               <ResponsiveContainer width="100%" height={180}>
@@ -1020,13 +1021,13 @@ const LikviditetPanel = ({ allData }: { allData: MonthData[] }) => {
                   <Area type="monotone" dataKey="saldo" stroke={statusColor} fill="url(#gL)" strokeWidth={2} dot={{ fill:statusColor, r:4, strokeWidth:0 }} name="Estimert saldo"/>
                 </AreaChart>
               </ResponsiveContainer>
-              <div style={{ display:'grid', gridTemplateColumns:'repeat(3,1fr)', gap:10, marginTop:16 }}>
+              <div className="cash-proj-grid">
                 {([['30 dager',proj30],['60 dager',proj60],['90 dager',proj90]] as [string,number][]).map(([lbl,val]) => {
                   const c = val >= 50000 ? C.green : val >= 10000 ? '#F5A623' : C.red;
                   return (
                     <div key={lbl} style={{ padding:'12px', background:C.navy, borderRadius:8, textAlign:'center' }}>
                       <div style={{ fontSize:10, color:C.gray, marginBottom:4, textTransform:'uppercase', letterSpacing:'0.08em' }}>{lbl}</div>
-                      <div style={{ fontFamily:'Cabinet Grotesk', fontSize:13, fontWeight:700, color:c }}>{formatNOK(val)}</div>
+                      <div style={{ fontSize:13, fontWeight:700, color:c }}>{formatNOK(val)}</div>
                     </div>
                   );
                 })}
@@ -1038,8 +1039,8 @@ const LikviditetPanel = ({ allData }: { allData: MonthData[] }) => {
       {numSaldo > 0 && proj90 < 50000 && (
         <Card hover={false}>
           <div style={{ display:'flex', justifyContent:'space-between', alignItems:'center', marginBottom:16 }}>
-            <h3 style={{ fontFamily:'Cabinet Grotesk', fontSize:18, fontWeight:800 }}>AI-råd for kontantstrøm</h3>
-            <button onClick={runAI} disabled={aiLoading} style={{ padding:'7px 16px', background:aiLoading?C.navyB:C.white, color:C.navy, border:'none', borderRadius:7, fontFamily:'Cabinet Grotesk', fontSize:12, fontWeight:600, cursor:aiLoading?'not-allowed':'pointer' }}>{aiLoading?'…':'↺ Oppdater'}</button>
+            <h3 style={{ fontSize:18, fontWeight:800 }}>AI-råd for kontantstrøm</h3>
+            <button onClick={runAI} disabled={aiLoading} style={{ padding:'7px 16px', background:aiLoading?C.navyB:C.white, color:C.navy, border:'none', borderRadius:7, fontSize:12, fontWeight:600, cursor:aiLoading?'not-allowed':'pointer' }}>{aiLoading?'…':'↺ Oppdater'}</button>
           </div>
           {aiLoading && <div style={{ display:'flex', flexDirection:'column', gap:10 }}><Skel/><Skel w="80%"/><Skel w="60%"/></div>}
           {aiError && !aiLoading && <div style={{ color:C.red, fontSize:13 }}>⚠ {aiError}</div>}
@@ -1072,7 +1073,8 @@ const KalkulatorPanel = ({ allData, currentMonth }: { allData: MonthData[]; curr
   const [isPayroll, setIsPayroll] = useState(false);
   const [aiText,    setAiText]    = useState<string|null>(null);
   const [aiLoading, setAiLoading] = useState(false);
-  const [scenarios, setScenarios] = useState<Scenario[]>(() => lsGet(SSCEN) || []);
+  const [scenarios, setScenarios] = useState<Scenario[]>([]);
+  useEffect(() => { const v = lsGet(SSCEN); if (v) setScenarios(v); }, []);
   const curr   = allData.find(d=>d.month===currentMonth) || null;
   const currDr = curr ? calcDerived(curr) : null;
   const numAmt = parseFloat(amount) || 0;
@@ -1101,12 +1103,12 @@ const KalkulatorPanel = ({ allData, currentMonth }: { allData: MonthData[]; curr
     finally { setAiLoading(false); }
   };
   const vc = verdict ? VC[verdict as keyof typeof VC] : null;
-  const IStyle: React.CSSProperties = { width:'100%', background:C.navy, border:`1px solid ${C.border}`, borderRadius:8, padding:'10px 12px', fontFamily:'Cabinet Grotesk', fontSize:14, color:C.white, outline:'none', marginBottom:14 };
+  const IStyle: React.CSSProperties = { width:'100%', background:C.navy, border:`1px solid ${C.border}`, borderRadius:8, padding:'10px 12px', fontSize:14, color:C.white, outline:'none', marginBottom:14 };
   return (
     <div className="fade-in">
-      <div style={{ display:'grid', gridTemplateColumns:'1fr 1fr', gap:20, alignItems:'start' }}>
+      <div className="two-col">
         <Card hover={false}>
-          <h3 style={{ fontFamily:'Cabinet Grotesk', fontSize:20, fontWeight:800, marginBottom:6 }}>Tåler jeg dette?</h3>
+          <h3 style={{ fontSize:20, fontWeight:800, marginBottom:6 }}>Tåler jeg dette?</h3>
           <p style={{ color:C.gray, fontSize:12, marginBottom:20, lineHeight:1.6 }}>Legg inn en potensiell ny kostnad og se konsekvensene for {fmtMonthFull(currentMonth)}.</p>
           {!curr && <div style={{ padding:'12px 14px', background:`${C.red}14`, border:`1px solid ${C.red}35`, borderRadius:10, fontSize:13, color:C.red, marginBottom:16 }}>Fyll inn data for {fmtMonthFull(currentMonth)} først.</div>}
           <label style={{ fontSize:10, textTransform:'uppercase', letterSpacing:'0.12em', color:C.gray, display:'block', marginBottom:5 }}>Navn på kostnad</label>
@@ -1125,13 +1127,13 @@ const KalkulatorPanel = ({ allData, currentMonth }: { allData: MonthData[]; curr
           {vc && numAmt > 0 && (
             <div style={{ padding:'18px', background:`${vc.color}10`, border:`2px solid ${vc.color}40`, borderRadius:12, textAlign:'center', marginBottom:16 }}>
               <div style={{ fontSize:20, marginBottom:6 }}>{vc.emoji}</div>
-              <div style={{ fontFamily:'Cabinet Grotesk', fontSize:18, fontWeight:800, color:vc.color }}>{vc.text}</div>
+              <div style={{ fontSize:18, fontWeight:800, color:vc.color }}>{vc.text}</div>
               <div style={{ fontSize:12, color:C.gray, marginTop:4 }}>{vc.sub}</div>
             </div>
           )}
           {numAmt > 0 && curr && (
             <button onClick={runAI} disabled={aiLoading}
-              style={{ width:'100%', padding:'11px', background:aiLoading?C.navyB:C.white, color:C.navy, border:'none', borderRadius:8, fontFamily:'Cabinet Grotesk', fontSize:13, fontWeight:700, cursor:aiLoading?'not-allowed':'pointer', display:'flex', alignItems:'center', justifyContent:'center', gap:6 }}>
+              style={{ width:'100%', padding:'11px', background:aiLoading?C.navyB:C.white, color:C.navy, border:'none', borderRadius:8, fontSize:13, fontWeight:700, cursor:aiLoading?'not-allowed':'pointer', display:'flex', alignItems:'center', justifyContent:'center', gap:6 }}>
               {aiLoading && <span style={{ width:10, height:10, borderRadius:'50%', border:`2px solid ${C.navy}`, borderTopColor:'transparent', animation:'spin 0.7s linear infinite', display:'inline-block' }}/>}
               {aiLoading ? 'Analyserer…' : '🤖 Få AI-råd'}
             </button>
@@ -1140,7 +1142,7 @@ const KalkulatorPanel = ({ allData, currentMonth }: { allData: MonthData[]; curr
         <div>
           {numAmt > 0 && curr && (
             <Card hover={false} style={{ marginBottom:16 }}>
-              <h3 style={{ fontFamily:'Cabinet Grotesk', fontSize:16, fontWeight:800, marginBottom:16 }}>Konsekvensanalyse</h3>
+              <h3 style={{ fontSize:16, fontWeight:800, marginBottom:16 }}>Konsekvensanalyse</h3>
               {[
                 { label:'Ny EBIT',          val:newEBIT||0,        fmt:formatNOK, color:(newEBIT||0)>=0?C.green:C.red },
                 { label:'Ny lønnsandel',    val:newLønnsandel||0,  fmt:formatPct, color:(newLønnsandel||0)>70?C.red:(newLønnsandel||0)>50?'#F5A623':C.green },
@@ -1148,14 +1150,14 @@ const KalkulatorPanel = ({ allData, currentMonth }: { allData: MonthData[]; curr
               ].map(({label,val,fmt,color}) => (
                 <div key={label} style={{ padding:'12px 16px', background:C.navy, borderRadius:10, borderLeft:`3px solid ${color}`, marginBottom:10 }}>
                   <div style={{ fontSize:10, color:C.gray, textTransform:'uppercase', letterSpacing:'0.1em', marginBottom:3 }}>{label}</div>
-                  <div style={{ fontFamily:'Cabinet Grotesk', fontSize:20, color, fontWeight:700 }}>{fmt(val)}</div>
+                  <div style={{ fontSize:20, color, fontWeight:700 }}>{fmt(val)}</div>
                 </div>
               ))}
             </Card>
           )}
           {aiText && !aiLoading && (
             <Card hover={false} style={{ marginBottom:16 }}>
-              <h3 style={{ fontFamily:'Cabinet Grotesk', fontSize:16, fontWeight:800, marginBottom:12 }}>AI-vurdering</h3>
+              <h3 style={{ fontSize:16, fontWeight:800, marginBottom:12 }}>AI-vurdering</h3>
               <div style={{ padding:'16px', background:C.navy, borderRadius:10, borderLeft:`3px solid ${C.indigo}` }}>
                 <p style={{ color:C.white, fontSize:14, lineHeight:1.8, margin:0, fontStyle:'italic' }}>"{aiText}"</p>
               </div>
@@ -1163,7 +1165,7 @@ const KalkulatorPanel = ({ allData, currentMonth }: { allData: MonthData[]; curr
           )}
           {scenarios.length > 0 && (
             <Card hover={false}>
-              <h3 style={{ fontFamily:'Cabinet Grotesk', fontSize:16, fontWeight:800, marginBottom:14 }}>Tidligere scenarioer</h3>
+              <h3 style={{ fontSize:16, fontWeight:800, marginBottom:14 }}>Tidligere scenarioer</h3>
               {scenarios.map((s,i) => {
                 const vc2 = s.verdict ? VC[s.verdict as keyof typeof VC] : null;
                 return (
@@ -1208,17 +1210,17 @@ const FasteSettings = ({ faste, onChange }: { faste: Partial<FasteKostnader>; on
     setTimeout(() => setSaved(false), 2500);
   };
   const total = FASTE_FIELDS_DEF.reduce((s,f) => s+(parseFloat(String(form[f.key]))||0), 0) + (parseFloat(String(form.andreFasteBeløp))||0);
-  const IBase: React.CSSProperties = { width:'100%', background:C.navy, border:`1px solid ${C.border}`, borderRadius:8, padding:'9px 46px 9px 12px', fontFamily:'Cabinet Grotesk', fontSize:14, color:C.white, outline:'none' };
+  const IBase: React.CSSProperties = { width:'100%', background:C.navy, border:`1px solid ${C.border}`, borderRadius:8, padding:'9px 46px 9px 12px', fontSize:14, color:C.white, outline:'none' };
   return (
     <Card hover={false} style={{ marginTop:16 }}>
       <div style={{ display:'flex', justifyContent:'space-between', alignItems:'center', marginBottom:18 }}>
         <div>
-          <h3 style={{ fontFamily:'Cabinet Grotesk', fontSize:20, fontWeight:800 }}>Faste kostnader</h3>
+          <h3 style={{ fontSize:20, fontWeight:800 }}>Faste kostnader</h3>
           <p style={{ color:C.gray, fontSize:12, marginTop:3 }}>Settes én gang — brukes automatisk hver måned.</p>
         </div>
-        {total > 0 && <div style={{ textAlign:'right' }}><div style={{ fontSize:10, color:C.grayD, textTransform:'uppercase', letterSpacing:'0.1em' }}>Totalt / mnd</div><div style={{ fontFamily:'Cabinet Grotesk', fontSize:20, fontWeight:800, color:'#F5A623' }}>{formatNOK(total)}</div></div>}
+        {total > 0 && <div style={{ textAlign:'right' }}><div style={{ fontSize:10, color:C.grayD, textTransform:'uppercase', letterSpacing:'0.1em' }}>Totalt / mnd</div><div style={{ fontSize:20, fontWeight:800, color:'#F5A623' }}>{formatNOK(total)}</div></div>}
       </div>
-      <div style={{ display:'grid', gridTemplateColumns:'1fr 1fr', gap:12, marginBottom:12 }}>
+      <div className="form-grid">
         {FASTE_FIELDS_DEF.map(f => (
           <div key={f.key}>
             <label style={{ display:'block', fontSize:10, textTransform:'uppercase', letterSpacing:'0.1em', color:C.gray, marginBottom:4 }}>{f.label}</label>
@@ -1233,7 +1235,7 @@ const FasteSettings = ({ faste, onChange }: { faste: Partial<FasteKostnader>; on
         ))}
       </div>
       <div style={{ fontSize:10, textTransform:'uppercase', letterSpacing:'0.1em', color:C.gray, marginBottom:6 }}>Andre faste kostnader</div>
-      <div style={{ display:'grid', gridTemplateColumns:'1fr 1fr', gap:12, marginBottom:18 }}>
+      <div className="form-grid" style={{ marginBottom:18 }}>
         <input type="text" value={String(form.andreFasteNavn||'')} placeholder="Navn (f.eks. Alarm)"
           onChange={e=>upd('andreFasteNavn', e.target.value)}
           onFocus={e=>(e.target as HTMLInputElement).style.borderColor=C.white} onBlur={e=>(e.target as HTMLInputElement).style.borderColor=C.border}
@@ -1247,7 +1249,7 @@ const FasteSettings = ({ faste, onChange }: { faste: Partial<FasteKostnader>; on
         </div>
       </div>
       <button onClick={save} disabled={saving}
-        style={{ width:'100%', padding:'11px', background:saved?C.green:C.white, color:saved?'#fff':C.navy, border:'none', borderRadius:8, fontFamily:'Cabinet Grotesk', fontSize:13, fontWeight:700, cursor:'pointer', transition:'all 0.2s' }}>
+        style={{ width:'100%', padding:'11px', background:saved?C.green:C.white, color:saved?'#fff':C.navy, border:'none', borderRadius:8, fontSize:13, fontWeight:700, cursor:'pointer', transition:'all 0.2s' }}>
         {saved ? '✓  Lagret' : saving ? '…' : 'Lagre faste kostnader'}
       </button>
     </Card>
@@ -1290,7 +1292,7 @@ const AnsattKort = ({ ansatt, onDelete }: { ansatt: Ansatt; onDelete: () => void
       </div>
       <div style={{ marginTop:10, padding:'10px 14px', background:C.navyM, borderRadius:8, display:'flex', justifyContent:'space-between', alignItems:'center' }}>
         <span style={{ fontSize:12, color:C.gray }}>{formatNOK(brutto)} lønn →</span>
-        <span style={{ fontFamily:'Cabinet Grotesk', fontSize:15, fontWeight:800, color:C.green }}>koster deg {formatNOK(kostnad)}/mnd</span>
+        <span style={{ fontSize:15, fontWeight:800, color:C.green }}>koster deg {formatNOK(kostnad)}/mnd</span>
       </div>
     </div>
   );
@@ -1314,30 +1316,30 @@ const AnsatteSettings = ({ ansatte, onAdd, onDelete }: AnsatteSettingsProps) => 
     setTimeout(() => setSaved(false), 2000);
   };
   const totalKostnad = ansatteTotalKostnad(ansatte);
-  const IBase: React.CSSProperties = { width:'100%', background:C.navyM, border:`1px solid ${C.border}`, borderRadius:8, padding:'9px 12px', fontFamily:'Cabinet Grotesk', fontSize:13, color:C.white, outline:'none' };
+  const IBase: React.CSSProperties = { width:'100%', background:C.navyM, border:`1px solid ${C.border}`, borderRadius:8, padding:'9px 12px', fontSize:13, color:C.white, outline:'none' };
   const previewKostnad = ansattMndKostnad(form as unknown as Partial<Ansatt>);
   return (
     <Card hover={false} style={{ marginTop:16 }}>
       <div style={{ display:'flex', justifyContent:'space-between', alignItems:'center', marginBottom:18 }}>
         <div>
-          <h3 style={{ fontFamily:'Cabinet Grotesk', fontSize:20, fontWeight:800 }}>Ansatte</h3>
+          <h3 style={{ fontSize:20, fontWeight:800 }}>Ansatte</h3>
           <p style={{ color:C.gray, fontSize:12, marginTop:3 }}>Beregn reell månedskostnad per ansatt inkl. avgifter.</p>
         </div>
-        {ansatte.length > 0 && <div style={{ textAlign:'right' }}><div style={{ fontSize:10, color:C.grayD, textTransform:'uppercase', letterSpacing:'0.1em' }}>{ansatte.length} ansatte · total</div><div style={{ fontFamily:'Cabinet Grotesk', fontSize:20, fontWeight:800, color:C.green }}>{formatNOK(totalKostnad)}/mnd</div></div>}
+        {ansatte.length > 0 && <div style={{ textAlign:'right' }}><div style={{ fontSize:10, color:C.grayD, textTransform:'uppercase', letterSpacing:'0.1em' }}>{ansatte.length} ansatte · total</div><div style={{ fontSize:20, fontWeight:800, color:C.green }}>{formatNOK(totalKostnad)}/mnd</div></div>}
       </div>
       {ansatte.map(a => <AnsattKort key={a.id} ansatt={a} onDelete={()=>onDelete(a.id)}/>)}
       {ansatte.length === 0 && !showForm && <div style={{ textAlign:'center', padding:'28px 0', color:C.grayD, fontSize:13 }}>Ingen ansatte registrert ennå.</div>}
       {!showForm ? (
         <button onClick={()=>setShowForm(true)}
-          style={{ width:'100%', padding:'10px', background:'transparent', border:`1px dashed ${C.border}`, borderRadius:8, color:C.gray, fontFamily:'Cabinet Grotesk', fontSize:13, cursor:'pointer', transition:'all 0.15s' }}
+          style={{ width:'100%', padding:'10px', background:'transparent', border:`1px dashed ${C.border}`, borderRadius:8, color:C.gray, fontSize:13, cursor:'pointer', transition:'all 0.15s' }}
           onMouseEnter={e=>{(e.currentTarget as HTMLButtonElement).style.borderColor=C.white;(e.currentTarget as HTMLButtonElement).style.color=C.white;}}
           onMouseLeave={e=>{(e.currentTarget as HTMLButtonElement).style.borderColor=C.border;(e.currentTarget as HTMLButtonElement).style.color=C.gray;}}>
           {saved ? '✓ Lagt til' : '+ Legg til ansatt'}
         </button>
       ) : (
         <div style={{ background:C.navyM, borderRadius:12, padding:'18px', border:`1px solid ${C.border}` }}>
-          <div style={{ fontFamily:'Cabinet Grotesk', fontSize:15, fontWeight:800, marginBottom:16 }}>Ny ansatt</div>
-          <div style={{ display:'grid', gridTemplateColumns:'1fr 1fr', gap:12, marginBottom:12 }}>
+          <div style={{ fontSize:15, fontWeight:800, marginBottom:16 }}>Ny ansatt</div>
+          <div className="form-grid">
             <div>
               <label style={{ display:'block', fontSize:10, textTransform:'uppercase', letterSpacing:'0.1em', color:C.gray, marginBottom:4 }}>Navn (valgfritt)</label>
               <input type="text" value={String(form.navn)} onChange={e=>upd('navn',e.target.value)} placeholder="F.eks. Per Olsen"
@@ -1352,7 +1354,7 @@ const AnsatteSettings = ({ ansatte, onAdd, onDelete }: AnsatteSettingsProps) => 
               </select>
             </div>
           </div>
-          <div style={{ display:'grid', gridTemplateColumns:'1fr 1fr', gap:12, marginBottom:12 }}>
+          <div className="form-grid">
             <div>
               <label style={{ display:'block', fontSize:10, textTransform:'uppercase', letterSpacing:'0.1em', color:C.gray, marginBottom:4 }}>Lønnstype</label>
               <select value={String(form.lønnstype)} onChange={e=>upd('lønnstype',e.target.value)}
@@ -1379,7 +1381,7 @@ const AnsatteSettings = ({ ansatte, onAdd, onDelete }: AnsatteSettingsProps) => 
               </div>
             </div>
           ) : (
-            <div style={{ display:'grid', gridTemplateColumns:'1fr 1fr', gap:12, marginBottom:12 }}>
+            <div className="form-grid">
               <div>
                 <label style={{ display:'block', fontSize:10, textTransform:'uppercase', letterSpacing:'0.1em', color:C.gray, marginBottom:4 }}>Timelønn</label>
                 <div style={{ position:'relative' }}>
@@ -1397,16 +1399,16 @@ const AnsatteSettings = ({ ansatte, onAdd, onDelete }: AnsatteSettingsProps) => 
           {previewKostnad > 0 && (
             <div style={{ padding:'10px 14px', background:C.navy, borderRadius:8, marginBottom:14, display:'flex', justifyContent:'space-between', alignItems:'center' }}>
               <span style={{ fontSize:12, color:C.gray }}>Estimert månedskostnad:</span>
-              <span style={{ fontFamily:'Cabinet Grotesk', fontSize:16, fontWeight:800, color:C.green }}>{formatNOK(previewKostnad)}/mnd</span>
+              <span style={{ fontSize:16, fontWeight:800, color:C.green }}>{formatNOK(previewKostnad)}/mnd</span>
             </div>
           )}
           <div style={{ display:'flex', gap:8 }}>
             <button onClick={addAnsatt} disabled={saving || !(Number(form.månedslønn)||Number(form.timelønn))}
-              style={{ flex:1, padding:'10px', background:(Number(form.månedslønn)||Number(form.timelønn))&&!saving?C.white:C.grayD, color:C.navy, border:'none', borderRadius:8, fontFamily:'Cabinet Grotesk', fontSize:13, fontWeight:700, cursor:(Number(form.månedslønn)||Number(form.timelønn))?'pointer':'not-allowed' }}>
+              style={{ flex:1, padding:'10px', background:(Number(form.månedslønn)||Number(form.timelønn))&&!saving?C.white:C.grayD, color:C.navy, border:'none', borderRadius:8, fontSize:13, fontWeight:700, cursor:(Number(form.månedslønn)||Number(form.timelønn))?'pointer':'not-allowed' }}>
               {saving ? '…' : 'Legg til'}
             </button>
             <button onClick={()=>{ setShowForm(false); setForm({ ...EMPTY_ANSATT }); }}
-              style={{ flex:1, padding:'10px', background:'transparent', color:C.gray, border:`1px solid ${C.border}`, borderRadius:8, fontFamily:'Cabinet Grotesk', fontSize:13, cursor:'pointer' }}>
+              style={{ flex:1, padding:'10px', background:'transparent', color:C.gray, border:`1px solid ${C.border}`, borderRadius:8, fontSize:13, cursor:'pointer' }}>
               Avbryt
             </button>
           </div>
@@ -1425,9 +1427,9 @@ const Onboarding = ({ onComplete }: OnboardingProps) => {
   const [completing, setCompleting] = useState(false);
   const upd = (k: string, v: unknown) => setProfil(p => ({ ...p, [k]: v }));
   const sf = (k: string, v: boolean) => setFocusState(p => ({ ...p, [k]: v }));
-  const InputStyle = (f: boolean): React.CSSProperties => ({ width:'100%', background:C.navyM, border:`1px solid ${f?C.white:C.border}`, borderRadius:8, padding:'12px 14px', fontFamily:'Cabinet Grotesk', fontSize:15, color:C.white, outline:'none', transition:'border-color 0.15s', marginBottom:14, boxSizing:'border-box' });
-  const BtnPrimary = (disabled: boolean): React.CSSProperties => ({ padding:'13px 28px', background:disabled?C.grayD:C.white, color:C.navy, border:'none', borderRadius:10, fontFamily:'Cabinet Grotesk', fontSize:14, fontWeight:700, cursor:disabled?'not-allowed':'pointer', transition:'all 0.2s' });
-  const BtnGhost: React.CSSProperties = { padding:'13px 20px', background:'transparent', color:C.gray, border:`1px solid ${C.border}`, borderRadius:10, fontFamily:'Cabinet Grotesk', fontSize:14, fontWeight:500, cursor:'pointer', transition:'all 0.2s' };
+  const InputStyle = (f: boolean): React.CSSProperties => ({ width:'100%', background:C.navyM, border:`1px solid ${f?C.white:C.border}`, borderRadius:8, padding:'12px 14px', fontSize:15, color:C.white, outline:'none', transition:'border-color 0.15s', marginBottom:14, boxSizing:'border-box' });
+  const BtnPrimary = (disabled: boolean): React.CSSProperties => ({ padding:'13px 28px', background:disabled?C.grayD:C.white, color:C.navy, border:'none', borderRadius:10, fontSize:14, fontWeight:700, cursor:disabled?'not-allowed':'pointer', transition:'all 0.2s' });
+  const BtnGhost: React.CSSProperties = { padding:'13px 20px', background:'transparent', color:C.gray, border:`1px solid ${C.border}`, borderRadius:10, fontSize:14, fontWeight:500, cursor:'pointer', transition:'all 0.2s' };
   const btypeLabel = BEDRIFTSTYPER.find(b=>b.id===profil.bedriftstype)?.label || '';
   return (
     <div style={{ minHeight:'100vh', display:'flex', flexDirection:'column', justifyContent:'center', alignItems:'center', background:C.navy, position:'relative' }}>
@@ -1438,15 +1440,15 @@ const Onboarding = ({ onComplete }: OnboardingProps) => {
       <div key={step} className="fade-in" style={{ maxWidth:480, width:'100%', padding:32 }}>
         {step === 1 && (
           <div style={{ textAlign:'center' }}>
-            <div style={{ width:56, height:56, background:C.amber, borderRadius:9, display:'flex', alignItems:'center', justifyContent:'center', fontSize:28, fontWeight:700, color:C.navy, fontFamily:'Cabinet Grotesk', margin:'0 auto 24px' }}>R</div>
-            <h1 style={{ fontFamily:'Cabinet Grotesk', fontSize:40, fontWeight:800, color:C.white, marginBottom:12 }}>Regnskap</h1>
+            <div style={{ width:56, height:56, background:C.amber, borderRadius:9, display:'flex', alignItems:'center', justifyContent:'center', fontSize:28, fontWeight:700, color:C.navy, margin:'0 auto 24px' }}>R</div>
+            <h1 style={{ fontSize:40, fontWeight:800, color:C.white, marginBottom:12 }}>Regnskap</h1>
             <p style={{ color:C.gray, fontSize:16, marginBottom:40, lineHeight:1.6 }}>Økonomisk oversikt, tilpasset din bedrift</p>
             <button onClick={()=>setStep(2)} style={{ ...BtnPrimary(false), fontSize:16, padding:'15px 40px' }}>Kom i gang →</button>
           </div>
         )}
         {step === 2 && (
           <div>
-            <h2 style={{ fontFamily:'Cabinet Grotesk', fontSize:26, fontWeight:800, color:C.white, marginBottom:28 }}>Fortell oss om bedriften din</h2>
+            <h2 style={{ fontSize:26, fontWeight:800, color:C.white, marginBottom:28 }}>Fortell oss om bedriften din</h2>
             <label style={{ display:'block', fontSize:10, letterSpacing:'0.12em', textTransform:'uppercase', color:C.gray, marginBottom:6 }}>Bedriftsnavn</label>
             <input type="text" value={profil.bedriftsnavn} onChange={e=>upd('bedriftsnavn',e.target.value)} placeholder="F.eks. Kafé Solberg AS"
               onFocus={()=>sf('bedriftsnavn',true)} onBlur={()=>sf('bedriftsnavn',false)} style={InputStyle(focus.bedriftsnavn||false)}/>
@@ -1461,8 +1463,8 @@ const Onboarding = ({ onComplete }: OnboardingProps) => {
         )}
         {step === 3 && (
           <div>
-            <h2 style={{ fontFamily:'Cabinet Grotesk', fontSize:26, fontWeight:800, color:C.white, marginBottom:24 }}>Hva slags bedrift driver du?</h2>
-            <div style={{ display:'grid', gridTemplateColumns:'repeat(3,1fr)', gap:10, marginBottom:16 }}>
+            <h2 style={{ fontSize:26, fontWeight:800, color:C.white, marginBottom:24 }}>Hva slags bedrift driver du?</h2>
+            <div className="btype-grid">
               {BEDRIFTSTYPER.map(b => (
                 <div key={b.id} onClick={()=>upd('bedriftstype',b.id)} style={{ padding:'16px 12px', background:profil.bedriftstype===b.id?C.navyM:C.navyL, border:profil.bedriftstype===b.id?`2px solid ${C.white}`:`1px solid ${C.border}`, borderRadius:12, cursor:'pointer', textAlign:'center', transition:'all 0.15s' }}>
                   <div style={{ fontSize:24, marginBottom:6 }}>{b.icon}</div>
@@ -1482,11 +1484,11 @@ const Onboarding = ({ onComplete }: OnboardingProps) => {
         )}
         {step === 4 && (
           <div>
-            <h2 style={{ fontFamily:'Cabinet Grotesk', fontSize:26, fontWeight:800, color:C.white, marginBottom:24 }}>Hvilken selskapsform har du?</h2>
+            <h2 style={{ fontSize:26, fontWeight:800, color:C.white, marginBottom:24 }}>Hvilken selskapsform har du?</h2>
             <div style={{ display:'grid', gridTemplateColumns:'1fr 1fr', gap:12, marginBottom:24 }}>
               {[{ id:'AS', label:'AS', sub:'Aksjeselskap — begrenset ansvar' },{ id:'ENK', label:'ENK', sub:'Enkeltpersonforetak — du er ansvarlig' }].map(sf2 => (
                 <div key={sf2.id} onClick={()=>{ upd('selskapsform',sf2.id); setStep(5); }} style={{ padding:'28px 20px', background:profil.selskapsform===sf2.id?C.navyM:C.navyL, border:profil.selskapsform===sf2.id?`2px solid ${C.white}`:`1px solid ${C.border}`, borderRadius:14, cursor:'pointer', textAlign:'center', transition:'all 0.15s' }}>
-                  <div style={{ fontFamily:'Cabinet Grotesk', fontSize:24, fontWeight:700, color:C.white, marginBottom:8 }}>{sf2.label}</div>
+                  <div style={{ fontSize:24, fontWeight:700, color:C.white, marginBottom:8 }}>{sf2.label}</div>
                   <div style={{ fontSize:12, color:C.gray, lineHeight:1.4 }}>{sf2.sub}</div>
                 </div>
               ))}
@@ -1496,10 +1498,10 @@ const Onboarding = ({ onComplete }: OnboardingProps) => {
         )}
         {step === 5 && (
           <div>
-            <h2 style={{ fontFamily:'Cabinet Grotesk', fontSize:26, fontWeight:800, color:C.white, marginBottom:24 }}>Hvor mange jobber i bedriften?</h2>
+            <h2 style={{ fontSize:26, fontWeight:800, color:C.white, marginBottom:24 }}>Hvor mange jobber i bedriften?</h2>
             <div style={{ display:'flex', flexDirection:'column', gap:10, marginBottom:24 }}>
               {['Bare meg selv','1–3 ansatte','4–10 ansatte','10+ ansatte'].map(opt => (
-                <div key={opt} onClick={()=>{ upd('antallAnsatte',opt); setStep(6); }} style={{ padding:'14px 16px', borderRadius:10, border:profil.antallAnsatte===opt?`2px solid ${C.white}`:`1px solid ${C.border}`, background:profil.antallAnsatte===opt?C.navyM:C.navyL, cursor:'pointer', transition:'all 0.15s', fontFamily:'Cabinet Grotesk', fontSize:15, color:C.white }}>
+                <div key={opt} onClick={()=>{ upd('antallAnsatte',opt); setStep(6); }} style={{ padding:'14px 16px', borderRadius:10, border:profil.antallAnsatte===opt?`2px solid ${C.white}`:`1px solid ${C.border}`, background:profil.antallAnsatte===opt?C.navyM:C.navyL, cursor:'pointer', transition:'all 0.15s', fontSize:15, color:C.white }}>
                   {opt}
                 </div>
               ))}
@@ -1510,7 +1512,7 @@ const Onboarding = ({ onComplete }: OnboardingProps) => {
         {step === 6 && (
           <div style={{ textAlign:'center' }}>
             <div style={{ fontSize:48, marginBottom:20 }}>✅</div>
-            <h2 style={{ fontFamily:'Cabinet Grotesk', fontSize:30, fontWeight:800, color:C.white, marginBottom:12 }}>Velkommen, {profil.eierNavn||profil.bedriftsnavn}!</h2>
+            <h2 style={{ fontSize:30, fontWeight:800, color:C.white, marginBottom:12 }}>Velkommen, {profil.eierNavn||profil.bedriftsnavn}!</h2>
             <p style={{ color:C.gray, fontSize:15, marginBottom:40, lineHeight:1.6 }}>Din {btypeLabel}-profil er klar og klar til bruk.</p>
             <button disabled={completing} onClick={async()=>{ setCompleting(true); await onComplete({ bedriftsnavn:profil.bedriftsnavn, eierNavn:profil.eierNavn, bedriftstype:profil.bedriftstype, selskapsform:profil.selskapsform as 'AS'|'ENK', antallAnsatte:profil.antallAnsatte, opprettet:new Date().toISOString() }); }}
               style={{ ...BtnPrimary(completing), fontSize:16, padding:'15px 40px' }}>
@@ -1532,8 +1534,8 @@ const ProfilKort = ({ profil, onEdit, onResetAll }: { profil: Profil; onEdit:()=
   return (
     <Card hover={false}>
       <div style={{ display:'flex', justifyContent:'space-between', alignItems:'flex-start', marginBottom:6 }}>
-        <div style={{ fontFamily:'Cabinet Grotesk', fontSize:20, fontWeight:800, color:C.white }}>{profil?.bedriftsnavn||'—'}</div>
-        {profil?.selskapsform && <span style={{ padding:'3px 10px', background:`${C.amber}18`, border:`1px solid ${C.amber}35`, borderRadius:20, fontSize:11, color:C.amber, fontFamily:'Cabinet Grotesk', fontWeight:500 }}>{profil.selskapsform}</span>}
+        <div style={{ fontSize:20, fontWeight:800, color:C.white }}>{profil?.bedriftsnavn||'—'}</div>
+        {profil?.selskapsform && <span style={{ padding:'3px 10px', background:`${C.amber}18`, border:`1px solid ${C.amber}35`, borderRadius:20, fontSize:11, color:C.amber, fontWeight:500 }}>{profil.selskapsform}</span>}
       </div>
       {profil?.eierNavn && <div style={{ color:C.gray, fontSize:13, marginBottom:12 }}>{profil.eierNavn}</div>}
       <div style={{ display:'flex', gap:16, marginBottom:20, flexWrap:'wrap' }}>
@@ -1542,12 +1544,12 @@ const ProfilKort = ({ profil, onEdit, onResetAll }: { profil: Profil; onEdit:()=
       </div>
       {!confirmReset ? (
         <div style={{ display:'flex', gap:8 }}>
-          <button onClick={onEdit} style={{ padding:'9px 18px', background:'transparent', color:C.gray, border:`1px solid ${C.border}`, borderRadius:8, fontFamily:'Cabinet Grotesk', fontSize:12, fontWeight:500, cursor:'pointer' }}
+          <button onClick={onEdit} style={{ padding:'9px 18px', background:'transparent', color:C.gray, border:`1px solid ${C.border}`, borderRadius:8, fontSize:12, fontWeight:500, cursor:'pointer' }}
             onMouseEnter={e=>{(e.currentTarget as HTMLButtonElement).style.borderColor=C.white;(e.currentTarget as HTMLButtonElement).style.color=C.white;}}
             onMouseLeave={e=>{(e.currentTarget as HTMLButtonElement).style.borderColor=C.border;(e.currentTarget as HTMLButtonElement).style.color=C.gray;}}>
             Rediger profil
           </button>
-          <button onClick={()=>setConfirmReset(true)} style={{ padding:'9px 18px', background:'transparent', color:C.red, border:`1px solid ${C.red}40`, borderRadius:8, fontFamily:'Cabinet Grotesk', fontSize:12, fontWeight:500, cursor:'pointer' }}>
+          <button onClick={()=>setConfirmReset(true)} style={{ padding:'9px 18px', background:'transparent', color:C.red, border:`1px solid ${C.red}40`, borderRadius:8, fontSize:12, fontWeight:500, cursor:'pointer' }}>
             Nullstill all data
           </button>
         </div>
@@ -1556,11 +1558,11 @@ const ProfilKort = ({ profil, onEdit, onResetAll }: { profil: Profil; onEdit:()=
           <div style={{ fontSize:13, color:C.red, marginBottom:12, fontWeight:600 }}>Er du sikker? Dette sletter ALL data.</div>
           <div style={{ display:'flex', gap:8 }}>
             <button onClick={async()=>{ setResetting(true); await onResetAll(); }}
-              disabled={resetting} style={{ flex:1, padding:'9px', background:C.red, border:'none', borderRadius:7, color:'#fff', fontFamily:'Cabinet Grotesk', fontSize:12, fontWeight:700, cursor:'pointer' }}>
+              disabled={resetting} style={{ flex:1, padding:'9px', background:C.red, border:'none', borderRadius:7, color:'#fff', fontSize:12, fontWeight:700, cursor:'pointer' }}>
               {resetting ? '…' : 'Ja, nullstill'}
             </button>
             <button onClick={()=>setConfirmReset(false)}
-              style={{ flex:1, padding:'9px', background:'transparent', border:`1px solid ${C.border}`, borderRadius:7, color:C.gray, fontFamily:'Cabinet Grotesk', fontSize:12, cursor:'pointer' }}>
+              style={{ flex:1, padding:'9px', background:'transparent', border:`1px solid ${C.border}`, borderRadius:7, color:C.gray, fontSize:12, cursor:'pointer' }}>
               Avbryt
             </button>
           </div>
@@ -1584,7 +1586,7 @@ const Settings = ({ faste, onFasteChange, ansatte, onAddAnsatt, onDeleteAnsatt, 
       <FasteSettings faste={faste} onChange={onFasteChange}/>
       {profil?.antallAnsatte !== 'Bare meg selv' && <AnsatteSettings ansatte={ansatte} onAdd={onAddAnsatt} onDelete={onDeleteAnsatt}/>}
       <Card hover={false} style={{ marginTop:16 }}>
-        <h3 style={{ fontFamily:'Cabinet Grotesk', fontSize:18, marginBottom:12 }}>Om Regnskap</h3>
+        <h3 style={{ fontSize:18, marginBottom:12 }}>Om Regnskap</h3>
         <div style={{ color:C.gray, fontSize:13, lineHeight:1.8 }}>
           <p style={{ marginBottom:8 }}>Regnskap er et enkelt regnskapsverktøy for norske småbedrifter.</p>
           <ul style={{ paddingLeft:20, color:C.grayD }}>
@@ -1613,16 +1615,17 @@ const TABS = [
 // ─── APP SHELL ────────────────────────────────────────────────────────────────
 interface AppShellProps {
   user: User;
+  currentMonth: string;
   initialProfil: Record<string,unknown> | null;
   initialMaaneder: Record<string,unknown>[];
   initialFaste: Record<string,unknown> | null;
   initialAnsatte: Record<string,unknown>[];
 }
 
-export default function AppShell({ user, initialProfil, initialMaaneder, initialFaste, initialAnsatte }: AppShellProps) {
+export default function AppShell({ user, currentMonth, initialProfil, initialMaaneder, initialFaste, initialAnsatte }: AppShellProps) {
   const supabase = createClient();
   const [tab,            setTab]            = useState('dashboard');
-  const [month,          setMonth]          = useState(getCurrentMonth);
+  const [month,          setMonth]          = useState(currentMonth);
   const [allData,        setAllData]        = useState<MonthData[]>(() => initialMaaneder.map(mapDbMonth));
   const [faste,          setFaste]          = useState<Partial<FasteKostnader>>(() => initialFaste ? mapDbFaste(initialFaste) : {});
   const [ansatte,        setAnsatte]        = useState<Ansatt[]>(() => initialAnsatte.map(mapDbAnsatt));
@@ -1732,21 +1735,21 @@ export default function AppShell({ user, initialProfil, initialMaaneder, initial
   return (
     <div style={{ minHeight:'100vh', background:C.navy }}>
       {/* Header */}
-      <header style={{ position:'sticky', top:0, zIndex:50, borderBottom:`1px solid ${C.border}`, padding:'0 32px', height:64, display:'flex', justifyContent:'space-between', alignItems:'center', background:`${C.navy}E8`, backdropFilter:'blur(14px)' }}>
+      <header className="app-header" style={{ position:'sticky', top:0, zIndex:50, borderBottom:`1px solid ${C.border}`, padding:'0 32px', display:'flex', justifyContent:'space-between', alignItems:'center', background:`${C.navy}E8`, backdropFilter:'blur(14px)' }}>
         <div style={{ display:'flex', alignItems:'center', gap:12 }}>
-          <div style={{ width:34, height:34, background:C.amber, borderRadius:9, display:'flex', alignItems:'center', justifyContent:'center', fontSize:18, fontWeight:700, color:C.navy, fontFamily:'Cabinet Grotesk' }}>R</div>
+          <div style={{ width:34, height:34, background:C.amber, borderRadius:9, display:'flex', alignItems:'center', justifyContent:'center', fontSize:18, fontWeight:700, color:C.navy }}>R</div>
           <div>
-            <div style={{ fontFamily:'Cabinet Grotesk', fontSize:19, letterSpacing:'-0.02em', lineHeight:1.1 }}>{profil?.bedriftsnavn||'Regnskap'}</div>
+            <div style={{ fontSize:19, letterSpacing:'-0.02em', lineHeight:1.1 }}>{profil?.bedriftsnavn||'Regnskap'}</div>
             <div style={{ fontSize:9, color:C.grayD, letterSpacing:'0.14em', textTransform:'uppercase' }}>{btypeEntry ? `${btypeEntry.icon} ${profil.selskapsform||''}` : 'Regnskapsverktøy'}</div>
           </div>
         </div>
         <MonthSelector month={month} onChange={setMonth} saved={saved}/>
         <div style={{ display:'flex', alignItems:'center', gap:16 }}>
-          <div style={{ fontFamily:'Cabinet Grotesk', fontSize:11, color:C.grayD, textAlign:'right', lineHeight:1.6 }}>
+          <div style={{ fontSize:11, color:C.grayD, textAlign:'right', lineHeight:1.6 }}>
             {saved.length > 0 ? `${saved.length} mnd. lagret` : 'Ingen data ennå'}
           </div>
           <button onClick={handleLogout}
-            style={{ padding:'7px 14px', background:'transparent', border:`1px solid ${C.border}`, borderRadius:7, color:C.grayD, fontFamily:'Cabinet Grotesk', fontSize:11, cursor:'pointer', transition:'all 0.15s' }}
+            style={{ padding:'7px 14px', background:'transparent', border:`1px solid ${C.border}`, borderRadius:7, color:C.grayD, fontSize:11, cursor:'pointer', transition:'all 0.15s' }}
             onMouseEnter={e=>{(e.currentTarget as HTMLButtonElement).style.borderColor=C.red;(e.currentTarget as HTMLButtonElement).style.color=C.red;}}
             onMouseLeave={e=>{(e.currentTarget as HTMLButtonElement).style.borderColor=C.border;(e.currentTarget as HTMLButtonElement).style.color=C.grayD;}}>
             Logg ut
@@ -1755,9 +1758,9 @@ export default function AppShell({ user, initialProfil, initialMaaneder, initial
       </header>
 
       {/* Nav */}
-      <nav style={{ borderBottom:`1px solid ${C.border}`, padding:'0 32px', display:'flex', gap:0 }}>
+      <nav className="nav-tabs" style={{ borderBottom:`1px solid ${C.border}`, padding:'0 8px' }}>
         {TABS.map(t => (
-          <button key={t.id} onClick={()=>setTab(t.id)} style={{ padding:'13px 18px', background:'transparent', border:'none', borderBottom:tab===t.id?`2px solid ${C.amber}`:'2px solid transparent', color:tab===t.id?C.amber:C.gray, cursor:'pointer', fontSize:13, fontFamily:'Cabinet Grotesk', letterSpacing:'0.03em', transition:'all 0.15s', marginBottom:-1, display:'flex', alignItems:'center', gap:6 }}>
+          <button key={t.id} onClick={()=>setTab(t.id)} className="nav-tab-btn" style={{ padding:'13px 18px', background:'transparent', border:'none', borderBottom:tab===t.id?`2px solid ${C.amber}`:'2px solid transparent', color:tab===t.id?C.amber:C.gray, cursor:'pointer', fontSize:13, letterSpacing:'0.03em', transition:'all 0.15s', marginBottom:-1, display:'flex', alignItems:'center', gap:6 }}>
             {t.label}
             {t.id==='dashboard' && dashboardWarnings.some(w=>w.level==='red') && <span style={{ width:6, height:6, borderRadius:'50%', background:C.red, display:'inline-block', animation:'pulse-dot 2s infinite' }}/>}
             {t.id==='entry' && saved.includes(month) && <span style={{ width:5, height:5, borderRadius:'50%', background:C.amber, display:'inline-block' }}/>}
@@ -1766,7 +1769,7 @@ export default function AppShell({ user, initialProfil, initialMaaneder, initial
       </nav>
 
       {/* Content */}
-      <main style={{ padding:'28px 32px 64px', maxWidth:1240, margin:'0 auto' }}>
+      <main className="main-content">
         {tab==='dashboard'  && <Dashboard    allData={allData} month={month} faste={faste} profil={profil}/>}
         {tab==='months'     && <MonthCalendar allData={allData} month={month} onNavigate={m=>{setMonth(m);setTab('entry');}}/>}
         {tab==='entry'      && <DataEntry     month={month} currentData={currentData} faste={faste} ansatte={ansatte} onSave={handleSaveMonth} onDelete={handleDeleteMonth}/>}
@@ -1782,7 +1785,7 @@ export default function AppShell({ user, initialProfil, initialMaaneder, initial
       </main>
 
       {/* Footer */}
-      <footer style={{ borderTop:`1px solid ${C.border}`, padding:'16px 32px', display:'flex', justifyContent:'space-between', fontSize:11, color:C.grayD, fontFamily:'Cabinet Grotesk' }}>
+      <footer style={{ borderTop:`1px solid ${C.border}`, padding:'16px 32px', display:'flex', justifyContent:'space-between', fontSize:11, color:C.grayD }}>
         <span>Regnskap v1.0 — Norsk regnskapsverktøy for småbedrifter</span>
         <span>{user.email} · NOK</span>
       </footer>

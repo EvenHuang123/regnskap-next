@@ -1,6 +1,4 @@
-@import url('https://api.fontshare.com/v2/css?f[]=cabinet-grotesk@800,700,500,400,300&display=swap');
-
-*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; font-family: 'Cabinet Grotesk', sans-serif !important; }
 html { font-size: 16px; }
 body {
   background: #141414;
@@ -29,3 +27,38 @@ input[type=number] { -moz-appearance: textfield; }
 @keyframes pulse-dot { 0%, 100% { opacity: 1; } 50% { opacity: 0.4; } }
 .fade-in { animation: fadeIn 0.3s ease both; }
 ::selection { background: rgba(232,232,232,0.15); }
+
+/* ─── Responsive layout ─────────────────────────────────────── */
+.nav-tabs { overflow-x: auto; -ms-overflow-style: none; scrollbar-width: none; }
+.nav-tabs::-webkit-scrollbar { display: none; }
+.nav-tab-btn { white-space: nowrap; flex-shrink: 0; }
+.main-content { padding: 28px 32px 64px; max-width: 1240px; margin: 0 auto; }
+.kpi-grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 16px; margin-bottom: 28px; }
+.chart-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 20px; margin-bottom: 20px; }
+.trend-grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 20px; }
+.two-col { display: grid; grid-template-columns: 1fr 1fr; gap: 24px; align-items: start; }
+.two-col-eq { display: grid; grid-template-columns: 1fr 1fr; gap: 20px; }
+.form-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; margin-bottom: 12px; }
+.btype-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 10px; margin-bottom: 16px; }
+.month-cal-grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 12px; }
+.cash-proj-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 10px; margin-top: 16px; }
+
+@media (max-width: 768px) {
+  .app-header { padding: 0 16px !important; min-height: 64px; flex-wrap: wrap; gap: 8px; }
+  .main-content { padding: 16px 16px 48px; }
+  .kpi-grid { grid-template-columns: 1fr 1fr; gap: 10px; margin-bottom: 16px; }
+  .chart-grid { grid-template-columns: 1fr; gap: 12px; }
+  .trend-grid { grid-template-columns: repeat(2, 1fr); gap: 12px; }
+  .two-col { grid-template-columns: 1fr; gap: 16px; }
+  .two-col-eq { grid-template-columns: 1fr; gap: 12px; }
+  .form-grid { grid-template-columns: 1fr; }
+  .btype-grid { grid-template-columns: repeat(2, 1fr); }
+  .month-cal-grid { grid-template-columns: repeat(3, 1fr); gap: 8px; }
+  .cash-proj-grid { grid-template-columns: repeat(3, 1fr); }
+}
+
+@media (max-width: 480px) {
+  .kpi-grid { grid-template-columns: 1fr 1fr; gap: 8px; }
+  .month-cal-grid { grid-template-columns: repeat(2, 1fr); }
+  .trend-grid { grid-template-columns: repeat(2, 1fr); }
+}

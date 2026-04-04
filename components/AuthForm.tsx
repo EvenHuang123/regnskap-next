@@ -21,7 +21,7 @@ export default function AuthForm({ mode }: { mode: 'login' | 'register' }) {
 
   const IStyle: React.CSSProperties = {
     width: '100%', background: C.navy, border: `1px solid ${C.border}`,
-    borderRadius: 8, padding: '12px 14px', fontFamily: 'Cabinet Grotesk',
+    borderRadius: 8, padding: '12px 14px',
     fontSize: 14, color: C.white, outline: 'none', marginBottom: 12,
     transition: 'border-color 0.15s',
   };
@@ -63,15 +63,15 @@ export default function AuthForm({ mode }: { mode: 'login' | 'register' }) {
           <div style={{
             width: 40, height: 40, background: C.amber, borderRadius: 10,
             display: 'flex', alignItems: 'center', justifyContent: 'center',
-            fontSize: 22, fontWeight: 800, color: C.navy, fontFamily: 'Cabinet Grotesk',
+            fontSize: 22, fontWeight: 800, color: C.navy,
           }}>R</div>
           <div>
-            <div style={{ fontFamily: 'Cabinet Grotesk', fontSize: 20, fontWeight: 800 }}>Regnskap</div>
+            <div style={{ fontSize: 20, fontWeight: 800 }}>Regnskap</div>
             <div style={{ fontSize: 11, color: C.grayD }}>Norsk regnskapsverktøy</div>
           </div>
         </div>
 
-        <h1 style={{ fontFamily: 'Cabinet Grotesk', fontSize: 22, fontWeight: 800, marginBottom: 8 }}>
+        <h1 style={{ fontSize: 22, fontWeight: 800, marginBottom: 8 }}>
           {mode === 'login' ? 'Logg inn' : 'Opprett konto'}
         </h1>
         <p style={{ color: C.grayD, fontSize: 13, marginBottom: 28 }}>
@@ -117,7 +117,7 @@ export default function AuthForm({ mode }: { mode: 'login' | 'register' }) {
           <button type="submit" disabled={loading} style={{
             width: '100%', marginTop: 8, padding: '13px',
             background: loading ? C.grayD : C.white, color: C.navy,
-            border: 'none', borderRadius: 8, fontFamily: 'Cabinet Grotesk',
+            border: 'none', borderRadius: 8,
             fontSize: 14, fontWeight: 800, cursor: loading ? 'not-allowed' : 'pointer',
             transition: 'all 0.2s',
           }}>

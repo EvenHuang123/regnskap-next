@@ -1,6 +1,7 @@
 import { redirect } from 'next/navigation';
 import { createClient } from '@/lib/supabase-server';
 import AppShell from '@/components/AppShell';
+import { getCurrentMonth } from '@/lib/calculations';
 
 export default async function Home() {
   const supabase = await createClient();
@@ -22,6 +23,7 @@ export default async function Home() {
   return (
     <AppShell
       user={user}
+      currentMonth={getCurrentMonth()}
       initialProfil={profil || null}
       initialMaaneder={maaneder || []}
       initialFaste={faste || null}
