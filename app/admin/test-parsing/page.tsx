@@ -99,7 +99,19 @@ export default function TestParsingPage() {
       const exVat = (result.belop ?? 0) - (result.mva ?? 0);
       const col   = kategoriToColumn(result.kategori);
 
-      // 1. Save to fakturaer
+      // 1. Upload PDF to Storage (path: {user_id}/{date}_{leverandor}.pdf)
+      let pdfPath = '';
+      if (file) {
+        const safeName = (result.leverandor ?? 'faktura')
+          .toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-|-$/g, '');
+        pdfPath = `${user.id}/${result.dato}_${safeName}.pdf`;
+        const { error: uploadErr } = await supabase.storage
+          .from('fakturaer-pdfs')
+          .upload(pdfPath, file, { contentType: 'application/pdf', upsert: true });
+        if (uploadErr) throw new Error(`PDF-opplasting: ${uploadErr.message}`);
+      }
+
+      // 2. Save to fakturaer (include pdf_url if uploaded)
       const { error: faktErr } = await supabase.from('fakturaer').insert({
         user_id:   user.id,
         leverandor: result.leverandor ?? 'Ukjent',
@@ -108,6 +120,7 @@ export default function TestParsingPage() {
         mva:       result.mva ?? 0,
         kategori:  result.kategori ?? 'Annet',
         status:    'ubetalt',
+        pdf_url:   pdfPath,
       });
       if (faktErr) throw new Error(`fakturaer: ${faktErr.message}`);
 

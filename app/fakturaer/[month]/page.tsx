@@ -10,13 +10,13 @@ const C = {
 };
 
 const MONTHS_NO = ['Januar','Februar','Mars','April','Mai','Juni','Juli','August','September','Oktober','November','Desember'];
-const fmtMonth  = (m: string) => { const [y,mo] = m.split('-'); return `${MONTHS_NO[+mo-1]} ${y}`; };
-const fmtNOK    = (v: number) => v.toLocaleString('nb-NO', { style:'currency', currency:'NOK', maximumFractionDigits:0 });
-const fmtDate   = (d: string) => { const [y,m,day] = d.split('-'); return `${day}.${m}.${y}`; };
-const slug      = (s: string) => s.toLowerCase().replace(/[^a-z0-9]+/g,'-').replace(/^-|-$/g,'');
+const fmtMonth = (m: string) => { const [y,mo] = m.split('-'); return `${MONTHS_NO[+mo-1]} ${y}`; };
+const fmtNOK   = (v: number) => v.toLocaleString('nb-NO', { style:'currency', currency:'NOK', maximumFractionDigits:0 });
+const fmtDate  = (d: string) => { const [y,m,day] = d.split('-'); return `${day}.${m}.${y}`; };
+const slug     = (s: string) => s.toLowerCase().replace(/[^a-z0-9]+/g,'-').replace(/^-|-$/g,'');
 
-const STATUS_LABEL: Record<string,string> = { ubetalt:'Ubetalt', betalt:'Betalt', forfalt:'Forfalt' };
 const STATUS_COLOR: Record<string,string> = { ubetalt:'#F5A623', betalt:'#22C55E', forfalt:'#E8445A' };
+const STATUS_LABEL: Record<string,string> = { ubetalt:'Ubetalt', betalt:'Betalt',  forfalt:'Forfalt'  };
 
 interface Faktura {
   id: string;
@@ -29,38 +29,33 @@ interface Faktura {
   status: string;
 }
 
-// ── Spinner ───────────────────────────────────────────────────────────────────
 const Spinner = () => (
-  <span style={{ width:11, height:11, border:`2px solid currentColor`, borderTopColor:'transparent', borderRadius:'50%', display:'inline-block', animation:'spin 0.7s linear infinite' }}/>
+  <span style={{ width:11, height:11, border:'2px solid currentColor', borderTopColor:'transparent', borderRadius:'50%', display:'inline-block', animation:'spin 0.7s linear infinite' }}/>
 );
 
-// ── Action button ─────────────────────────────────────────────────────────────
-const ActionBtn = ({ onClick, disabled, danger, children }: { onClick:()=>void; disabled?:boolean; danger?:boolean; children:React.ReactNode }) => {
-  const [hover, setHover] = useState(false);
+const Btn = ({ onClick, disabled, danger, active, children }: {
+  onClick: () => void; disabled?: boolean; danger?: boolean; active?: boolean; children: React.ReactNode;
+}) => {
+  const [hov, setHov] = useState(false);
+  const borderColor = disabled ? C.border : hov ? (danger ? C.red : C.white) : (active ? C.green : C.border);
+  const textColor   = disabled ? C.grayD  : hov ? (danger ? C.red : C.white) : (active ? C.green : C.gray);
   return (
-    <button
-      onClick={onClick}
-      disabled={disabled}
-      onMouseEnter={()=>setHover(true)}
-      onMouseLeave={()=>setHover(false)}
-      style={{
-        display:'inline-flex', alignItems:'center', gap:5,
-        padding:'7px 13px', borderRadius:7, border:`1px solid ${hover&&!disabled ? (danger?C.red:C.white) : C.border}`,
-        background:'transparent',
-        color: disabled ? C.grayD : hover ? (danger?C.red:C.white) : C.gray,
-        fontSize:12, cursor:disabled?'not-allowed':'pointer',
-        transition:'all 0.15s', whiteSpace:'nowrap',
-      }}>
+    <button onClick={onClick} disabled={disabled}
+      onMouseEnter={() => setHov(true)} onMouseLeave={() => setHov(false)}
+      style={{ display:'inline-flex', alignItems:'center', gap:5, padding:'7px 13px', borderRadius:7,
+        border:`1px solid ${borderColor}`, background:'transparent', color:textColor,
+        fontSize:12, cursor:disabled ? 'not-allowed' : 'pointer', transition:'all 0.15s', whiteSpace:'nowrap' }}>
       {children}
     </button>
   );
 };
 
-// ── Confirm dialog ─────────────────────────────────────────────────────────────
-const ConfirmDialog = ({ leverandor, onConfirm, onCancel, loading }: { leverandor:string; onConfirm:()=>void; onCancel:()=>void; loading:boolean }) => (
-  <div style={{ position:'fixed', inset:0, background:'rgba(0,0,0,0.7)', zIndex:100, display:'flex', alignItems:'center', justifyContent:'center', padding:24 }}>
+const ConfirmDialog = ({ leverandor, onConfirm, onCancel, loading }: {
+  leverandor: string; onConfirm: () => void; onCancel: () => void; loading: boolean;
+}) => (
+  <div style={{ position:'fixed', inset:0, background:'rgba(0,0,0,0.75)', zIndex:100, display:'flex', alignItems:'center', justifyContent:'center', padding:24 }}>
     <div style={{ background:C.navyL, border:`1px solid ${C.border}`, borderRadius:14, padding:'28px 28px 24px', maxWidth:400, width:'100%' }}>
-      <div style={{ fontSize:20, marginBottom:8 }}>🗑️</div>
+      <div style={{ fontSize:22, marginBottom:8 }}>🗑️</div>
       <h2 style={{ fontSize:17, fontWeight:700, color:C.white, marginBottom:10 }}>Slett faktura</h2>
       <p style={{ color:C.gray, fontSize:14, lineHeight:1.6, marginBottom:24 }}>
         Er du sikker på at du vil slette fakturaen fra <strong style={{ color:C.white }}>{leverandor}</strong>?
@@ -80,19 +75,17 @@ const ConfirmDialog = ({ leverandor, onConfirm, onCancel, loading }: { leverando
   </div>
 );
 
-// ── Main page ─────────────────────────────────────────────────────────────────
 export default function FakturaerPage({ params }: { params: Promise<{ month: string }> }) {
   const { month } = use(params);
   const supabase  = createClient();
 
-  const [fakturaer,   setFakturaer]   = useState<Faktura[]>([]);
-  const [pageLoading, setPageLoading] = useState(true);
-  const [pageError,   setPageError]   = useState<string|null>(null);
-
-  // Per-invoice action state: 'open' | 'download' | 'delete'
-  const [pdfLoading,  setPdfLoading]  = useState<Record<string,string>>({});   // id → action
-  const [pdfError,    setPdfError]    = useState<Record<string,string>>({});   // id → message
-  const [confirmId,   setConfirmId]   = useState<string|null>(null);
+  const [fakturaer,     setFakturaer]     = useState<Faktura[]>([]);
+  const [pageLoading,   setPageLoading]   = useState(true);
+  const [pageError,     setPageError]     = useState<string|null>(null);
+  const [pdfLoading,    setPdfLoading]    = useState<Record<string,string>>({});
+  const [pdfError,      setPdfError]      = useState<Record<string,string>>({});
+  const [statusLoading, setStatusLoading] = useState<Record<string,boolean>>({});
+  const [confirmId,     setConfirmId]     = useState<string|null>(null);
   const [deleteLoading, setDeleteLoading] = useState(false);
 
   const load = useCallback(async () => {
@@ -105,43 +98,60 @@ export default function FakturaerPage({ params }: { params: Promise<{ month: str
       .eq('user_id', user.id)
       .gte('dato', `${month}-01`)
       .lte('dato', `${month}-31`)
-      .order('dato', { ascending:false });
-    if (error) { setPageError(error.message); }
-    else { setFakturaer((data ?? []) as Faktura[]); }
+      .order('dato', { ascending: false });
+    if (error) setPageError(error.message);
+    else setFakturaer((data ?? []) as Faktura[]);
     setPageLoading(false);
   }, [month]);
 
   useEffect(() => { load(); }, [load]);
 
-  // Get a fresh signed URL for a given invoice id
+  // ── Status toggle ─────────────────────────────────────────────────────────────
+  const handleToggleStatus = async (f: Faktura) => {
+    const next = f.status === 'betalt' ? 'ubetalt' : 'betalt';
+    setStatusLoading(p => ({ ...p, [f.id]: true }));
+    // Optimistic update
+    setFakturaer(prev => prev.map(x => x.id === f.id ? { ...x, status: next } : x));
+    const { error } = await supabase
+      .from('fakturaer')
+      .update({ status: next })
+      .eq('id', f.id);
+    if (error) {
+      // Revert on failure
+      setFakturaer(prev => prev.map(x => x.id === f.id ? { ...x, status: f.status } : x));
+      setPdfError(p => ({ ...p, [f.id]: error.message }));
+    }
+    setStatusLoading(p => ({ ...p, [f.id]: false }));
+  };
+
+  // ── PDF helpers ───────────────────────────────────────────────────────────────
   const getSignedUrl = async (f: Faktura): Promise<string> => {
     if (!f.pdf_url) throw new Error('Ingen PDF lagret for denne fakturaen');
     const { data, error } = await supabase.storage
       .from('fakturaer-pdfs')
       .createSignedUrl(f.pdf_url, 3600);
-    if (error || !data?.signedUrl) throw new Error(error?.message ?? 'Kunne ikke hente PDF');
+    if (error || !data?.signedUrl) throw new Error(error?.message ?? 'Kunne ikke generere PDF-lenke');
     return data.signedUrl;
   };
 
   const handleOpen = async (f: Faktura) => {
-    setPdfLoading(p => ({ ...p, [f.id]:'open' }));
-    setPdfError(p => ({ ...p, [f.id]:'' }));
+    setPdfLoading(p => ({ ...p, [f.id]: 'open' }));
+    setPdfError(p => ({ ...p, [f.id]: '' }));
     try {
       const url = await getSignedUrl(f);
       window.open(url, '_blank', 'noopener,noreferrer');
     } catch (e) {
       setPdfError(p => ({ ...p, [f.id]: e instanceof Error ? e.message : 'Feil ved åpning' }));
     } finally {
-      setPdfLoading(p => ({ ...p, [f.id]:'' }));
+      setPdfLoading(p => ({ ...p, [f.id]: '' }));
     }
   };
 
   const handleDownload = async (f: Faktura) => {
-    setPdfLoading(p => ({ ...p, [f.id]:'download' }));
-    setPdfError(p => ({ ...p, [f.id]:'' }));
+    setPdfLoading(p => ({ ...p, [f.id]: 'download' }));
+    setPdfError(p => ({ ...p, [f.id]: '' }));
     try {
       const url = await getSignedUrl(f);
-      // Fetch the blob so we can force-download with a nice filename
       const res  = await fetch(url);
       if (!res.ok) throw new Error(`HTTP ${res.status}`);
       const blob = await res.blob();
@@ -149,35 +159,34 @@ export default function FakturaerPage({ params }: { params: Promise<{ month: str
       const a = document.createElement('a');
       a.href = URL.createObjectURL(blob);
       a.download = filename;
+      document.body.appendChild(a);
       a.click();
+      document.body.removeChild(a);
       URL.revokeObjectURL(a.href);
     } catch (e) {
       setPdfError(p => ({ ...p, [f.id]: e instanceof Error ? e.message : 'Feil ved nedlasting' }));
     } finally {
-      setPdfLoading(p => ({ ...p, [f.id]:'' }));
+      setPdfLoading(p => ({ ...p, [f.id]: '' }));
     }
   };
 
+  // ── Delete ────────────────────────────────────────────────────────────────────
   const handleDelete = async () => {
     if (!confirmId) return;
     setDeleteLoading(true);
     const f = fakturaer.find(x => x.id === confirmId);
-    // Delete storage file if present
     if (f?.pdf_url) {
       await supabase.storage.from('fakturaer-pdfs').remove([f.pdf_url]);
     }
     const { error } = await supabase.from('fakturaer').delete().eq('id', confirmId);
     setDeleteLoading(false);
     setConfirmId(null);
-    if (!error) {
-      setFakturaer(prev => prev.filter(x => x.id !== confirmId));
-    } else {
-      setPageError(error.message);
-    }
+    if (!error) setFakturaer(prev => prev.filter(x => x.id !== confirmId));
+    else setPageError(error.message);
   };
 
-  const totalBelop = fakturaer.reduce((s,f) => s+(f.belop??0), 0);
-  const totalMva   = fakturaer.reduce((s,f) => s+(f.mva??0),   0);
+  const totalBelop = fakturaer.reduce((s,f) => s + (f.belop ?? 0), 0);
+  const totalMva   = fakturaer.reduce((s,f) => s + (f.mva   ?? 0), 0);
 
   if (!/^\d{4}-\d{2}$/.test(month)) {
     return <div style={{ color:C.white, padding:40 }}>Ugyldig måned.</div>;
@@ -185,14 +194,13 @@ export default function FakturaerPage({ params }: { params: Promise<{ month: str
 
   return (
     <>
-      {/* Keyframe for spinner — injected once */}
       <style>{`@keyframes spin { to { transform: rotate(360deg); } }`}</style>
 
       {confirmId && (
         <ConfirmDialog
-          leverandor={fakturaer.find(f=>f.id===confirmId)?.leverandor ?? ''}
+          leverandor={fakturaer.find(f => f.id === confirmId)?.leverandor ?? ''}
           onConfirm={handleDelete}
-          onCancel={()=>setConfirmId(null)}
+          onCancel={() => setConfirmId(null)}
           loading={deleteLoading}
         />
       )}
@@ -209,7 +217,7 @@ export default function FakturaerPage({ params }: { params: Promise<{ month: str
             <h1 style={{ fontSize:28, fontWeight:800, color:C.white, letterSpacing:'-0.02em' }}>{fmtMonth(month)}</h1>
             {!pageLoading && fakturaer.length > 0 && (
               <p style={{ color:C.gray, fontSize:14, marginTop:6 }}>
-                {fakturaer.length} faktura{fakturaer.length!==1?'er':''} — totalt {fmtNOK(totalBelop)} (herav MVA: {fmtNOK(totalMva)})
+                {fakturaer.length} faktura{fakturaer.length !== 1 ? 'er' : ''} — totalt {fmtNOK(totalBelop)} (herav MVA: {fmtNOK(totalMva)})
               </p>
             )}
           </div>
@@ -235,21 +243,29 @@ export default function FakturaerPage({ params }: { params: Promise<{ month: str
           ) : (
             <div style={{ display:'flex', flexDirection:'column', gap:12 }}>
               {fakturaer.map(f => {
-                const busy    = pdfLoading[f.id];
-                const errMsg  = pdfError[f.id];
-                const hasPdf  = !!f.pdf_url;
+                const busy   = pdfLoading[f.id];
+                const errMsg = pdfError[f.id];
+                const hasPdf = !!f.pdf_url;
+                const toggling = !!statusLoading[f.id];
+                const isPaid   = f.status === 'betalt';
                 return (
                   <div key={f.id} style={{ background:C.navyL, border:`1px solid ${C.border}`, borderRadius:12, padding:'18px 20px' }}>
 
-                    {/* Top row: name + status */}
+                    {/* Top: name + status badge */}
                     <div style={{ display:'flex', alignItems:'center', gap:10, marginBottom:10, flexWrap:'wrap' }}>
                       <span style={{ fontSize:16, fontWeight:700, color:C.white }}>{f.leverandor}</span>
-                      <span style={{ fontSize:11, color:STATUS_COLOR[f.status]??C.grayD, background:`${STATUS_COLOR[f.status]??C.grayD}18`, border:`1px solid ${STATUS_COLOR[f.status]??C.border}`, borderRadius:5, padding:'2px 8px' }}>
-                        {STATUS_LABEL[f.status]??f.status}
+                      <span style={{
+                        fontSize:11, fontWeight:600,
+                        color: STATUS_COLOR[f.status] ?? C.grayD,
+                        background: `${STATUS_COLOR[f.status] ?? C.grayD}18`,
+                        border: `1px solid ${STATUS_COLOR[f.status] ?? C.border}`,
+                        borderRadius:5, padding:'2px 8px',
+                      }}>
+                        {isPaid ? '✓ ' : ''}{STATUS_LABEL[f.status] ?? f.status}
                       </span>
                     </div>
 
-                    {/* Details row */}
+                    {/* Details */}
                     <div style={{ display:'flex', gap:20, flexWrap:'wrap', marginBottom:14 }}>
                       <div>
                         <div style={{ fontSize:10, color:C.grayD, textTransform:'uppercase', letterSpacing:'0.1em' }}>Beløp</div>
@@ -267,31 +283,42 @@ export default function FakturaerPage({ params }: { params: Promise<{ month: str
                       </div>
                       <div>
                         <div style={{ fontSize:10, color:C.grayD, textTransform:'uppercase', letterSpacing:'0.1em' }}>Kategori</div>
-                        <div style={{ fontSize:14, color:C.gray }}>{f.kategori||'—'}</div>
+                        <div style={{ fontSize:14, color:C.gray }}>{f.kategori || '—'}</div>
                       </div>
                     </div>
 
-                    {/* Actions row */}
+                    {/* Actions */}
                     <div style={{ display:'flex', gap:8, flexWrap:'wrap', alignItems:'center' }}>
-                      <ActionBtn onClick={()=>handleOpen(f)} disabled={!hasPdf||!!busy}>
-                        {busy==='open' ? <><Spinner/> Åpner…</> : '📄 Åpne PDF'}
-                      </ActionBtn>
-                      <ActionBtn onClick={()=>handleDownload(f)} disabled={!hasPdf||!!busy}>
-                        {busy==='download' ? <><Spinner/> Laster ned…</> : '⬇️ Last ned'}
-                      </ActionBtn>
-                      <ActionBtn onClick={()=>setConfirmId(f.id)} disabled={!!busy} danger>
-                        🗑️ Slett
-                      </ActionBtn>
+                      {/* PDF buttons — only shown when PDF exists */}
+                      {hasPdf ? (
+                        <>
+                          <Btn onClick={() => handleOpen(f)} disabled={!!busy || toggling}>
+                            {busy === 'open' ? <><Spinner/> Åpner…</> : '📄 Åpne PDF'}
+                          </Btn>
+                          <Btn onClick={() => handleDownload(f)} disabled={!!busy || toggling}>
+                            {busy === 'download' ? <><Spinner/> Laster ned…</> : '⬇️ Last ned'}
+                          </Btn>
+                        </>
+                      ) : (
+                        <span style={{ fontSize:11, color:C.grayD, padding:'7px 0' }}>Ingen PDF</span>
+                      )}
+
+                      {/* Status toggle */}
+                      <Btn onClick={() => handleToggleStatus(f)} disabled={toggling || !!busy} active={isPaid}>
+                        {toggling ? <><Spinner/> …</> : isPaid ? '✓ Marker som ubetalt' : 'Marker som betalt'}
+                      </Btn>
+
+                      {/* Delete — pushed to the right */}
+                      <div style={{ marginLeft:'auto' }}>
+                        <Btn onClick={() => setConfirmId(f.id)} disabled={!!busy || toggling} danger>
+                          🗑️ Slett
+                        </Btn>
+                      </div>
                     </div>
 
-                    {/* Per-invoice error */}
                     {errMsg && (
                       <div style={{ marginTop:8, fontSize:12, color:C.red }}>{errMsg}</div>
                     )}
-                    {!hasPdf && (
-                      <div style={{ marginTop:6, fontSize:11, color:C.grayD }}>Ingen PDF lagret for denne fakturaen</div>
-                    )}
-
                   </div>
                 );
               })}
