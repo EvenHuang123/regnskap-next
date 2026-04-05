@@ -449,10 +449,10 @@ export default async function LandingPage() {
             <h1 className="lhero-h1">
               Automatisk<br />
               faktura&shy;behandling<br />
-              for <span>restauranter</span>
+              for <span>småbedrifter</span>
             </h1>
             <p className="lhero-sub">
-              Send faktura på e-post. AI-en leser, registrerer og kategoriserer den automatisk — leverandør, beløp, MVA og alt.
+              Spar tid og få full kontroll over fakturaene dine. AI-drevet oversikt for frisører, butikker, konsulenter, håndverkere og alle andre småbedrifter.
             </p>
             <div className="lhero-btns">
               <a href="/login" className="lbtn-primary">
@@ -466,8 +466,8 @@ export default async function LandingPage() {
 
           <div className="lhero-img-wrap">
             <img
-              src="https://images.unsplash.com/photo-1414235077428-338989a2e8c0?w=1200&q=80&auto=format&fit=crop"
-              alt="Restaurant"
+              src="https://images.unsplash.com/photo-1556742502-ec7c0e9f34b1?w=1200&q=80&auto=format&fit=crop"
+              alt="Småbedrift"
               className="lhero-img"
             />
             <div className="lhero-img-badge">
@@ -482,13 +482,17 @@ export default async function LandingPage() {
 
         {/* ── Trust bar ── */}
         <div className="ltrust">
-          <span>Claude AI</span>
+          <span>✂️ Frisører</span>
           <div className="ltrust-divider" />
-          <span>Supabase</span>
+          <span>🛍️ Butikker</span>
           <div className="ltrust-divider" />
-          <span>Norsk MVA-håndtering</span>
+          <span>💼 Konsulenter</span>
           <div className="ltrust-divider" />
-          <span>PDF-parsing</span>
+          <span>🔧 Håndverkere</span>
+          <div className="ltrust-divider" />
+          <span>🍽️ Restauranter</span>
+          <div className="ltrust-divider" />
+          <span>og alle andre småbedrifter</span>
         </div>
 
         {/* ── Features ── */}
@@ -496,7 +500,7 @@ export default async function LandingPage() {
           <p className="lsection-label">Funksjoner</p>
           <h2 className="lsection-h2">Alt du trenger for fakturaene</h2>
           <p className="lsection-sub">
-            Fra mottak til betaling — FinanceIQ håndterer fakturaadministrasjonen slik at du kan fokusere på restauranten.
+            Fra mottak til betaling — FinanceIQ håndterer fakturaadministrasjonen slik at du kan fokusere på det du er god på. Perfekt for alle som mottar 10+ fakturaer i måneden.
           </p>
 
           <div className="lfeatures-grid">
@@ -504,7 +508,7 @@ export default async function LandingPage() {
               <div className="lfeature-icon">📧</div>
               <h3 className="lfeature-title">Automatisk e-postmottak</h3>
               <p className="lfeature-desc">
-                Videresend fakturaer til din personlige FinanceIQ-adresse. AI-en tar seg av resten — ingen manuell registrering.
+                Videresend fakturaer til din personlige FinanceIQ-adresse. Uansett bransje — hvis du mottar fakturaer, sparer du tid.
               </p>
             </div>
             <div className="lfeature-card">
@@ -567,7 +571,7 @@ export default async function LandingPage() {
           <div className="lcta-inner">
             <h2 className="lcta-h2">Klar til å ta kontroll over fakturaene?</h2>
             <p className="lcta-sub">
-              Gratis å komme i gang. Ingen kredittkort nødvendig.
+              Brukes av småbedrifter over hele Norge. Gratis å komme i gang — ingen kredittkort nødvendig.
             </p>
             <a href="/login" className="lbtn-primary" style={{ display: 'inline-flex' }}>
               Opprett gratis konto →
