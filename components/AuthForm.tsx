@@ -64,9 +64,9 @@ export default function AuthForm({ mode }: { mode: 'login' | 'register' }) {
             width: 40, height: 40, background: C.amber, borderRadius: 10,
             display: 'flex', alignItems: 'center', justifyContent: 'center',
             fontSize: 22, fontWeight: 800, color: C.navy,
-          }}>R</div>
+          }}>F</div>
           <div>
-            <div style={{ fontSize: 20, fontWeight: 800 }}>Regnskap</div>
+            <div style={{ fontSize: 20, fontWeight: 800 }}>FinanceIQ</div>
             <div style={{ fontSize: 11, color: C.grayD }}>Norsk regnskapsverktøy</div>
           </div>
         </div>

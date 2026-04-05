@@ -824,7 +824,7 @@ const Dashboard = ({ allData, month, faste, profil }: { allData: MonthData[]; mo
   if (!curr && !allData.length) return (
     <div className="fade-in" style={{ textAlign:'center', padding:'80px 0' }}>
       <div style={{ fontSize:64, marginBottom:20 }}>📊</div>
-      <h2 style={{ fontSize:30, marginBottom:14 }}>Kom i gang med Regnskap</h2>
+      <h2 style={{ fontSize:30, marginBottom:14 }}>Kom i gang med FinanceIQ</h2>
       <p style={{ color:C.gray, fontSize:15, maxWidth:420, margin:'0 auto', lineHeight:1.8 }}>Ingen data registrert ennå. Gå til <strong style={{ color:C.amber }}>Datainntasting</strong> for å legge inn din første måned.</p>
     </div>
   );
@@ -1468,8 +1468,8 @@ const Onboarding = ({ onComplete }: OnboardingProps) => {
       <div key={step} className="fade-in" style={{ maxWidth:480, width:'100%', padding:32 }}>
         {step === 1 && (
           <div style={{ textAlign:'center' }}>
-            <div style={{ width:56, height:56, background:C.amber, borderRadius:9, display:'flex', alignItems:'center', justifyContent:'center', fontSize:28, fontWeight:700, color:C.navy, margin:'0 auto 24px' }}>R</div>
-            <h1 style={{ fontSize:40, fontWeight:800, color:C.white, marginBottom:12 }}>Regnskap</h1>
+            <div style={{ width:56, height:56, background:C.amber, borderRadius:9, display:'flex', alignItems:'center', justifyContent:'center', fontSize:28, fontWeight:700, color:C.navy, margin:'0 auto 24px' }}>F</div>
+            <h1 style={{ fontSize:40, fontWeight:800, color:C.white, marginBottom:12 }}>FinanceIQ</h1>
             <p style={{ color:C.gray, fontSize:16, marginBottom:40, lineHeight:1.6 }}>Økonomisk oversikt, tilpasset din bedrift</p>
             <button onClick={()=>setStep(2)} style={{ ...BtnPrimary(false), fontSize:16, padding:'15px 40px' }}>Kom i gang →</button>
           </div>
@@ -1544,7 +1544,7 @@ const Onboarding = ({ onComplete }: OnboardingProps) => {
             <p style={{ color:C.gray, fontSize:15, marginBottom:40, lineHeight:1.6 }}>Din {btypeLabel}-profil er klar og klar til bruk.</p>
             <button disabled={completing} onClick={async()=>{ setCompleting(true); await onComplete({ bedriftsnavn:profil.bedriftsnavn, eierNavn:profil.eierNavn, bedriftstype:profil.bedriftstype, selskapsform:profil.selskapsform as 'AS'|'ENK', antallAnsatte:profil.antallAnsatte, opprettet:new Date().toISOString() }); }}
               style={{ ...BtnPrimary(completing), fontSize:16, padding:'15px 40px' }}>
-              {completing ? '…' : 'Åpne Regnskap →'}
+              {completing ? '…' : 'Åpne FinanceIQ →'}
             </button>
             <div style={{ marginTop:20 }}><button onClick={()=>setStep(5)} style={BtnGhost}>← Tilbake</button></div>
           </div>
@@ -1614,9 +1614,9 @@ const Settings = ({ faste, onFasteChange, ansatte, onAddAnsatt, onDeleteAnsatt, 
       <FasteSettings faste={faste} onChange={onFasteChange}/>
       {profil?.antallAnsatte !== 'Bare meg selv' && <AnsatteSettings ansatte={ansatte} onAdd={onAddAnsatt} onDelete={onDeleteAnsatt}/>}
       <Card hover={false} style={{ marginTop:16 }}>
-        <h3 style={{ fontSize:18, marginBottom:12 }}>Om Regnskap</h3>
+        <h3 style={{ fontSize:18, marginBottom:12 }}>Om FinanceIQ</h3>
         <div style={{ color:C.gray, fontSize:13, lineHeight:1.8 }}>
-          <p style={{ marginBottom:8 }}>Regnskap er et enkelt regnskapsverktøy for norske småbedrifter.</p>
+          <p style={{ marginBottom:8 }}>FinanceIQ er et enkelt regnskapsverktøy for norske småbedrifter.</p>
           <ul style={{ paddingLeft:20, color:C.grayD }}>
             <li>Data lagres i Supabase per bruker</li>
             <li>AI-analyse via Anthropic Claude (claude-sonnet-4-20250514)</li>
@@ -1765,10 +1765,10 @@ export default function AppShell({ user, currentMonth, initialProfil, initialMaa
       {/* Header */}
       <header style={{ position:'sticky', top:0, zIndex:50, borderBottom:`1px solid ${C.border}`, padding:'0 32px', height:64, display:'flex', justifyContent:'space-between', alignItems:'center', background:`${C.navy}E8`, backdropFilter:'blur(14px)' }}>
         <div style={{ display:'flex', alignItems:'center', gap:12 }}>
-          <div style={{ width:34, height:34, background:C.amber, borderRadius:9, display:'flex', alignItems:'center', justifyContent:'center', fontSize:18, fontWeight:700, color:C.navy }}>R</div>
+          <div style={{ width:34, height:34, background:C.amber, borderRadius:9, display:'flex', alignItems:'center', justifyContent:'center', fontSize:18, fontWeight:700, color:C.navy }}>F</div>
           <div>
-            <div style={{ fontSize:19, letterSpacing:'-0.02em', lineHeight:1.1 }}>{profil?.bedriftsnavn||'Regnskap'}</div>
-            <div style={{ fontSize:9, color:C.grayD, letterSpacing:'0.14em', textTransform:'uppercase' }}>{btypeEntry ? `${btypeEntry.icon} ${profil.selskapsform||''}` : 'Regnskapsverktøy'}</div>
+            <div style={{ fontSize:19, letterSpacing:'-0.02em', lineHeight:1.1 }}>{profil?.bedriftsnavn||'FinanceIQ'}</div>
+            <div style={{ fontSize:9, color:C.grayD, letterSpacing:'0.14em', textTransform:'uppercase' }}>{btypeEntry ? `${btypeEntry.icon} ${profil.selskapsform||''}` : 'FinanceIQ'}</div>
           </div>
         </div>
         <div className="header-month">
@@ -1821,7 +1821,7 @@ export default function AppShell({ user, currentMonth, initialProfil, initialMaa
 
       {/* Footer */}
       <footer style={{ borderTop:`1px solid ${C.border}`, padding:'16px 32px', display:'flex', justifyContent:'space-between', fontSize:11, color:C.grayD }}>
-        <span>Regnskap v1.0 — Norsk regnskapsverktøy for småbedrifter</span>
+        <span>FinanceIQ v1.0 — Norsk regnskapsverktøy for småbedrifter</span>
         <span>{user.email} · NOK</span>
       </footer>
     </div>
