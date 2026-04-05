@@ -38,7 +38,7 @@ export default function AuthForm({ mode }: { mode: 'login' | 'register' }) {
       } else {
         const { error: err } = await supabase.auth.signInWithPassword({ email, password });
         if (err) throw err;
-        router.push('/');
+        router.push('/app');
         router.refresh();
       }
     } catch (err: unknown) {

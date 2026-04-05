@@ -214,7 +214,7 @@ export default function FakturaerPage({ params }: { params: Promise<{ month: str
       <div style={{ minHeight:'100vh', background:C.navy, padding:'40px 24px', fontFamily:"'Cabinet Grotesk', sans-serif" }}>
         <div style={{ maxWidth:760, margin:'0 auto' }}>
 
-          <a href="/" style={{ display:'inline-flex', alignItems:'center', gap:6, color:C.grayD, fontSize:13, textDecoration:'none', marginBottom:28 }}>
+          <a href="/app" style={{ display:'inline-flex', alignItems:'center', gap:6, color:C.grayD, fontSize:13, textDecoration:'none', marginBottom:28 }}>
             ← Tilbake til Måneder
           </a>
 

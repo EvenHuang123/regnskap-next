@@ -1,6 +1,8 @@
 import { createServerClient } from '@supabase/ssr';
 import { NextResponse, type NextRequest } from 'next/server';
 
+const PUBLIC_PATHS = ['/', '/login', '/register'];
+
 export async function middleware(request: NextRequest) {
   let supabaseResponse = NextResponse.next({ request });
 
@@ -24,12 +26,16 @@ export async function middleware(request: NextRequest) {
   const { data: { user } } = await supabase.auth.getUser();
   const { pathname } = request.nextUrl;
 
-  if (!user && pathname !== '/login' && pathname !== '/register') {
+  // Unauthenticated users may only visit public paths
+  if (!user && !PUBLIC_PATHS.includes(pathname)) {
     return NextResponse.redirect(new URL('/login', request.url));
   }
-  if (user && (pathname === '/login' || pathname === '/register')) {
-    return NextResponse.redirect(new URL('/', request.url));
+
+  // Authenticated users are sent to the app when visiting public paths
+  if (user && PUBLIC_PATHS.includes(pathname)) {
+    return NextResponse.redirect(new URL('/app', request.url));
   }
+
   return supabaseResponse;
 }
 

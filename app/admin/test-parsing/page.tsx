@@ -173,7 +173,7 @@ export default function TestParsingPage() {
       <div style={{ maxWidth: 640, margin: '0 auto' }}>
 
         {/* Back button */}
-        <a href="/" style={{ display: 'inline-flex', alignItems: 'center', gap: 6, color: C.grayD, fontSize: 13, textDecoration: 'none', marginBottom: 28, transition: 'color 0.15s' }}
+        <a href="/app" style={{ display: 'inline-flex', alignItems: 'center', gap: 6, color: C.grayD, fontSize: 13, textDecoration: 'none', marginBottom: 28, transition: 'color 0.15s' }}
           onMouseEnter={e => { (e.currentTarget as HTMLAnchorElement).style.color = C.white; }}
           onMouseLeave={e => { (e.currentTarget as HTMLAnchorElement).style.color = C.grayD; }}>
           ← Tilbake til dashbord
@@ -279,7 +279,7 @@ export default function TestParsingPage() {
                 <div style={{ display: 'flex', alignItems: 'center', gap: 8, color: C.green, fontSize: 13 }}>
                   <span>✓</span>
                   <span>{saveMsg}</span>
-                  <a href="/" style={{ marginLeft: 'auto', color: C.grayD, fontSize: 12, textDecoration: 'none' }}
+                  <a href="/app" style={{ marginLeft: 'auto', color: C.grayD, fontSize: 12, textDecoration: 'none' }}
                     onMouseEnter={e => { (e.currentTarget as HTMLAnchorElement).style.color = C.white; }}
                     onMouseLeave={e => { (e.currentTarget as HTMLAnchorElement).style.color = C.grayD; }}>
                     → Gå til Måneder
