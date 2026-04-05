@@ -139,7 +139,13 @@ export default function FakturaerPage({ params }: { params: Promise<{ month: str
     setPdfError(p => ({ ...p, [f.id]: '' }));
     try {
       const url = await getSignedUrl(f);
-      window.open(url, '_blank', 'noopener,noreferrer');
+      const a = document.createElement('a');
+      a.href = url;
+      a.target = '_blank';
+      a.rel = 'noopener noreferrer';
+      document.body.appendChild(a);
+      a.click();
+      document.body.removeChild(a);
     } catch (e) {
       setPdfError(p => ({ ...p, [f.id]: e instanceof Error ? e.message : 'Feil ved åpning' }));
     } finally {
