@@ -1,7 +1,11 @@
 import { createServerClient } from '@supabase/ssr';
 import { NextResponse, type NextRequest } from 'next/server';
 
-const PUBLIC_PATHS = ['/', '/login', '/register'];
+// Paths that are always publicly accessible (no auth required, no redirects)
+const PUBLIC_PATHS = ['/'];
+
+// Paths that are public but redirect authenticated users to the app
+const AUTH_ENTRY_PATHS = ['/login', '/register'];
 
 export async function middleware(request: NextRequest) {
   let supabaseResponse = NextResponse.next({ request });
@@ -26,14 +30,20 @@ export async function middleware(request: NextRequest) {
   const { data: { user } } = await supabase.auth.getUser();
   const { pathname } = request.nextUrl;
 
-  // Unauthenticated users may only visit public paths
-  if (!user && !PUBLIC_PATHS.includes(pathname)) {
-    return NextResponse.redirect(new URL('/login', request.url));
+  // Always-public paths: serve as-is for everyone
+  if (PUBLIC_PATHS.includes(pathname)) {
+    return supabaseResponse;
   }
 
-  // Authenticated users are sent to the app when visiting public paths
-  if (user && PUBLIC_PATHS.includes(pathname)) {
-    return NextResponse.redirect(new URL('/app', request.url));
+  // Auth-entry paths: redirect authenticated users to the app
+  if (AUTH_ENTRY_PATHS.includes(pathname)) {
+    if (user) return NextResponse.redirect(new URL('/app', request.url));
+    return supabaseResponse;
+  }
+
+  // Everything else requires auth
+  if (!user) {
+    return NextResponse.redirect(new URL('/login', request.url));
   }
 
   return supabaseResponse;

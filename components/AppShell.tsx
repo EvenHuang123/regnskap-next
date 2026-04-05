@@ -941,7 +941,7 @@ const MonthCalendar = ({ allData, month, onNavigate }: { allData: MonthData[]; m
                   </>
                 ) : <div style={{ fontSize:11, color:C.grayD }}>Ingen data</div>}
                 {nFakt > 0 && (
-                  <a href={`/fakturaer/${mKey}`}
+                  <a href={`/app/fakturaer/${mKey}`}
                     onClick={e=>e.stopPropagation()}
                     style={{ display:'inline-flex', alignItems:'center', gap:4, marginTop:8, padding:'4px 8px', background:C.navyB, border:`1px solid ${C.border}`, borderRadius:6, fontSize:11, color:C.gray, textDecoration:'none', transition:'all 0.15s' }}
                     onMouseEnter={e=>{(e.currentTarget as HTMLAnchorElement).style.borderColor=C.amber;(e.currentTarget as HTMLAnchorElement).style.color=C.amber;}}
@@ -1796,7 +1796,7 @@ export default function AppShell({ user, currentMonth, initialProfil, initialMaa
             {t.id==='entry' && saved.includes(month) && <span style={{ width:5, height:5, borderRadius:'50%', background:C.amber, display:'inline-block' }}/>}
           </button>
         ))}
-        <a href="/admin/test-parsing" className="nav-tab-btn" style={{ padding:'13px 18px', background:'transparent', border:'none', borderBottom:'2px solid transparent', color:C.gray, cursor:'pointer', fontSize:13, letterSpacing:'0.03em', transition:'all 0.15s', marginBottom:-1, display:'flex', alignItems:'center', gap:6, textDecoration:'none' }}
+        <a href="/app/admin/test-parsing" className="nav-tab-btn" style={{ padding:'13px 18px', background:'transparent', border:'none', borderBottom:'2px solid transparent', color:C.gray, cursor:'pointer', fontSize:13, letterSpacing:'0.03em', transition:'all 0.15s', marginBottom:-1, display:'flex', alignItems:'center', gap:6, textDecoration:'none' }}
           onMouseEnter={e=>{(e.currentTarget as HTMLAnchorElement).style.color=C.amber;}}
           onMouseLeave={e=>{(e.currentTarget as HTMLAnchorElement).style.color=C.gray;}}>
           Fakturaer
