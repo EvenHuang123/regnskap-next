@@ -886,7 +886,25 @@ const Dashboard = ({ allData, month, faste, profil }: { allData: MonthData[]; mo
 
 // ─── Month Calendar ───────────────────────────────────────────────────────────
 const MonthCalendar = ({ allData, month, onNavigate }: { allData: MonthData[]; month: string; onNavigate: (m:string)=>void }) => {
+  const supabase = createClient();
   const [year, setYear] = useState(() => parseInt(month.split('-')[0]));
+  const [invoiceCounts, setInvoiceCounts] = useState<Record<string,number>>({});
+
+  useEffect(() => {
+    const load = async () => {
+      const { data: { user } } = await supabase.auth.getUser();
+      if (!user) return;
+      const { data } = await supabase.from('fakturaer').select('dato').eq('user_id', user.id);
+      if (!data) return;
+      const counts: Record<string,number> = {};
+      for (const row of data) {
+        if (row.dato) { const m = (row.dato as string).slice(0,7); counts[m] = (counts[m]??0)+1; }
+      }
+      setInvoiceCounts(counts);
+    };
+    load();
+  }, []);
+
   const savedSet = new Set(allData.map(d => d.month));
   const NB: React.CSSProperties = { background:'transparent', border:`1px solid ${C.border}`, borderRadius:7, color:C.gray, cursor:'pointer', padding:'6px 14px', fontSize:13, transition:'all 0.15s' };
   return (
@@ -907,6 +925,7 @@ const MonthCalendar = ({ allData, month, onNavigate }: { allData: MonthData[]; m
             const isSelected=mKey === month;
             const data     = isSaved ? allData.find(d=>d.month===mKey) : null;
             const dr       = data ? calcDerived(data) : null;
+            const nFakt    = invoiceCounts[mKey] ?? 0;
             return (
               <div key={mKey} onClick={()=>onNavigate(mKey)}
                 style={{ padding:'16px', borderRadius:12, cursor:'pointer', border:isSelected?`2px solid ${C.white}`:`1px solid ${isSaved?C.navyHL:C.border}`, background:isSaved?C.navyM:C.navy, transition:'all 0.15s', position:'relative' }}
@@ -921,6 +940,15 @@ const MonthCalendar = ({ allData, month, onNavigate }: { allData: MonthData[]; m
                     {dr && <div style={{ fontSize:11, marginTop:4, color:dr.driftsresultat>=0?C.green:C.red, fontWeight:600 }}>{dr.driftsresultat>=0?'▲':'▼'} {formatNOK(dr.driftsresultat)}</div>}
                   </>
                 ) : <div style={{ fontSize:11, color:C.grayD }}>Ingen data</div>}
+                {nFakt > 0 && (
+                  <a href={`/fakturaer/${mKey}`}
+                    onClick={e=>e.stopPropagation()}
+                    style={{ display:'inline-flex', alignItems:'center', gap:4, marginTop:8, padding:'4px 8px', background:C.navyB, border:`1px solid ${C.border}`, borderRadius:6, fontSize:11, color:C.gray, textDecoration:'none', transition:'all 0.15s' }}
+                    onMouseEnter={e=>{(e.currentTarget as HTMLAnchorElement).style.borderColor=C.amber;(e.currentTarget as HTMLAnchorElement).style.color=C.amber;}}
+                    onMouseLeave={e=>{(e.currentTarget as HTMLAnchorElement).style.borderColor=C.border;(e.currentTarget as HTMLAnchorElement).style.color=C.gray;}}>
+                    📄 Se fakturaer ({nFakt})
+                  </a>
+                )}
               </div>
             );
           })}
