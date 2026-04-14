@@ -2029,6 +2029,45 @@ const Settings = ({ faste, onFasteChange, ansatte, onAddAnsatt, onDeleteAnsatt, 
           </ul>
         </div>
       </Card>
+
+      <Card hover={false} style={{ marginTop:16 }}>
+        <h3 style={{ fontSize:18, marginBottom:4 }}>Kontakt oss</h3>
+        <p style={{ fontSize:13, color:C.grayD, marginBottom:18 }}>Har du spørsmål eller trenger hjelp? Vi svarer innen én arbeidsdag.</p>
+        <div style={{ display:'flex', flexDirection:'column', gap:10 }}>
+          <a href="mailto:even.zhe.huang@gmail.com"
+            style={{ display:'inline-flex', alignItems:'center', gap:10, padding:'11px 16px',
+              background:C.navyM, border:`1px solid ${C.border}`, borderRadius:9,
+              color:C.white, fontSize:13, fontWeight:600, textDecoration:'none', transition:'border-color 0.15s' }}
+            onMouseEnter={e => (e.currentTarget.style.borderColor = '#22C55E')}
+            onMouseLeave={e => (e.currentTarget.style.borderColor = C.border)}>
+            <span style={{ fontSize:16 }}>✉️</span>
+            <span>
+              <span style={{ display:'block', fontSize:11, color:C.grayD, fontWeight:400, marginBottom:1 }}>E-post</span>
+              even.zhe.huang@gmail.com
+            </span>
+          </a>
+          <a href="tel:+4790155436"
+            style={{ display:'inline-flex', alignItems:'center', gap:10, padding:'11px 16px',
+              background:C.navyM, border:`1px solid ${C.border}`, borderRadius:9,
+              color:C.white, fontSize:13, fontWeight:600, textDecoration:'none', transition:'border-color 0.15s' }}
+            onMouseEnter={e => (e.currentTarget.style.borderColor = '#22C55E')}
+            onMouseLeave={e => (e.currentTarget.style.borderColor = C.border)}>
+            <span style={{ fontSize:16 }}>📞</span>
+            <span>
+              <span style={{ display:'block', fontSize:11, color:C.grayD, fontWeight:400, marginBottom:1 }}>Telefon</span>
+              +47 901 55 436
+            </span>
+          </a>
+          <div style={{ display:'inline-flex', alignItems:'center', gap:10, padding:'11px 16px',
+              background:C.navyM, border:`1px solid ${C.border}`, borderRadius:9, fontSize:13 }}>
+            <span style={{ fontSize:16 }}>📍</span>
+            <span>
+              <span style={{ display:'block', fontSize:11, color:C.grayD, fontWeight:400, marginBottom:1 }}>Adresse</span>
+              <span style={{ color:C.white, fontWeight:600 }}>Oslo, Norge</span>
+            </span>
+          </div>
+        </div>
+      </Card>
     </div>
   );
 };

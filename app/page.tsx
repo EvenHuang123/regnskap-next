@@ -350,20 +350,39 @@ export default async function LandingPage() {
         .lcta-btns { display: flex; gap: 12px; justify-content: center; flex-wrap: wrap; }
 
         /* ── Footer ──────────────────────────────────────── */
-        .lfooter {
-          border-top: 1px solid #141414; padding: 28px 48px;
+        .lfooter-wrap {
+          background: #0D0D0D; border-top: 1px solid #1A1A1A;
+          padding: 64px 48px 32px;
+        }
+        .lfooter-grid {
+          display: grid; grid-template-columns: 2fr 1fr 1fr 1fr;
+          gap: 48px; max-width: 1200px; margin: 0 auto 48px;
+        }
+        .lfooter-brand-logo {
+          display: flex; align-items: center; gap: 10px;
+          text-decoration: none; color: #F5F5F5;
+          font-size: 16px; font-weight: 800; letter-spacing: -0.02em;
+          margin-bottom: 14px;
+        }
+        .lfooter-brand-desc { font-size: 13px; color: #4B5563; line-height: 1.7; max-width: 240px; }
+        .lfooter-col-title { font-size: 11px; font-weight: 700; letter-spacing: 0.1em; text-transform: uppercase; color: #6B7280; margin-bottom: 16px; }
+        .lfooter-col-link {
+          display: block; font-size: 13px; color: #4B5563;
+          text-decoration: none; margin-bottom: 10px; transition: color 0.15s;
+        }
+        .lfooter-col-link:hover { color: #22C55E; }
+        .lfooter-col-text { font-size: 13px; color: #4B5563; margin-bottom: 10px; line-height: 1.6; }
+        .lfooter-bottom {
           display: flex; align-items: center; justify-content: space-between;
           max-width: 1200px; margin: 0 auto;
+          padding-top: 28px; border-top: 1px solid #1A1A1A;
+          font-size: 12px; color: #2A2A2A;
         }
-        .lfooter-logo {
-          display: flex; align-items: center; gap: 8px;
-          text-decoration: none; color: #3A3A3A; font-size: 13px; font-weight: 700;
+        .lfooter-bottom-links { display: flex; gap: 24px; }
+        .lfooter-bottom-link {
+          color: #2A2A2A; text-decoration: none; transition: color 0.15s;
         }
-        .lfooter-links { display: flex; gap: 24px; }
-        .lfooter-link {
-          font-size: 12px; color: #2A2A2A; text-decoration: none; transition: color 0.15s;
-        }
-        .lfooter-link:hover { color: #6B7280; }
+        .lfooter-bottom-link:hover { color: #6B7280; }
 
         /* ── Responsive ──────────────────────────────────── */
         @media (max-width: 1024px) {
@@ -390,8 +409,10 @@ export default async function LandingPage() {
           .lcta { padding: 0 24px; margin-bottom: 56px; }
           .lcta-inner { padding: 48px 28px; }
           .ltrust { padding: 20px 24px; gap: 0; }
-          .lfooter { padding: 24px; flex-direction: column; gap: 16px; text-align: center; }
-          .lfooter-links { justify-content: center; }
+          .lfooter-wrap { padding: 48px 24px 28px; }
+          .lfooter-grid { grid-template-columns: 1fr 1fr; gap: 32px; }
+          .lfooter-bottom { flex-direction: column; gap: 12px; text-align: center; }
+          .lfooter-bottom-links { justify-content: center; }
         }
         @media (max-width: 500px) {
           .lbenefits-grid { grid-template-columns: 1fr; }
@@ -769,15 +790,50 @@ export default async function LandingPage() {
         </div>
 
         {/* ── Footer ── */}
-        <footer style={{ borderTop: '1px solid #141414' }}>
-          <div className="lfooter">
-            <a href="/" className="lfooter-logo">
-              <div style={{ width: 24, height: 24, background: '#F5F5F5', borderRadius: 6, display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 12, fontWeight: 800, color: '#0A0A0A' }}>F</div>
-              FinanceIQ v1.0
-            </a>
-            <div className="lfooter-links">
-              <a href="/login" className="lfooter-link">Logg inn</a>
-              <a href="/register" className="lfooter-link">Registrer deg</a>
+        <footer className="lfooter-wrap">
+          <div className="lfooter-grid">
+            {/* Brand */}
+            <div>
+              <a href="/" className="lfooter-brand-logo">
+                <div style={{ width: 28, height: 28, background: '#F5F5F5', borderRadius: 7, display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 14, fontWeight: 800, color: '#0A0A0A', flexShrink: 0 }}>F</div>
+                FinanceIQ
+              </a>
+              <p className="lfooter-brand-desc">
+                Automatisk regnskapsassistent for norske småbedrifter. Send fakturaer — AI-en gjør resten.
+              </p>
+            </div>
+
+            {/* Produkt */}
+            <div>
+              <p className="lfooter-col-title">Produkt</p>
+              <a href="/login" className="lfooter-col-link">Logg inn</a>
+              <a href="/register" className="lfooter-col-link">Kom i gang gratis</a>
+              <a href="/#features" className="lfooter-col-link">Funksjoner</a>
+            </div>
+
+            {/* Kontakt */}
+            <div>
+              <p className="lfooter-col-title">Kontakt</p>
+              <a href="mailto:even.zhe.huang@gmail.com" className="lfooter-col-link">even.zhe.huang@gmail.com</a>
+              <a href="tel:+4790155436" className="lfooter-col-link">+47 901 55 436</a>
+              <p className="lfooter-col-text" style={{ marginTop: 4 }}>Oslo, Norge</p>
+            </div>
+
+            {/* Juridisk */}
+            <div>
+              <p className="lfooter-col-title">Juridisk</p>
+              <a href="/personvern" className="lfooter-col-link">Personvern</a>
+              <a href="/vilkar" className="lfooter-col-link">Vilkår for bruk</a>
+            </div>
+          </div>
+
+          {/* Bottom bar */}
+          <div className="lfooter-bottom">
+            <span>© {new Date().getFullYear()} FinanceIQ. Alle rettigheter forbeholdt.</span>
+            <div className="lfooter-bottom-links">
+              <a href="/personvern" className="lfooter-bottom-link">Personvern</a>
+              <a href="/vilkar" className="lfooter-bottom-link">Vilkår</a>
+              <a href="mailto:even.zhe.huang@gmail.com" className="lfooter-bottom-link">Kontakt</a>
             </div>
           </div>
         </footer>
