@@ -73,3 +73,61 @@ input[type=number] { -moz-appearance: textfield; }
   .month-cal-grid { grid-template-columns: repeat(2, 1fr); }
   .trend-grid { grid-template-columns: 1fr 1fr; }
 }
+
+/* ─── Shepherd.js / Product Tour ────────────────────────────── */
+.shepherd-has-cancel-icon .shepherd-cancel-icon { color: #6B7280; font-size: 22px; line-height: 1; }
+.shepherd-has-cancel-icon .shepherd-cancel-icon:hover { color: #F5F5F5; }
+
+.fiq-tour-step.shepherd-element {
+  background: #1C1C1C;
+  border: 1px solid #2E2E2E;
+  border-radius: 12px;
+  box-shadow: 0 24px 64px rgba(0,0,0,.7);
+  max-width: 360px;
+  font-family: 'Cabinet Grotesk', sans-serif;
+}
+.fiq-tour-step .shepherd-header {
+  background: transparent;
+  padding: 18px 20px 0;
+  border-bottom: none;
+}
+.fiq-tour-step .shepherd-title {
+  font-size: 16px;
+  font-weight: 800;
+  color: #F5F5F5;
+  letter-spacing: -0.01em;
+}
+.fiq-tour-step .shepherd-text {
+  color: #9CA3AF;
+  font-size: 13px;
+  line-height: 1.65;
+  padding: 10px 20px 6px;
+}
+.fiq-tour-step .shepherd-text strong { color: #F5F5F5; }
+.fiq-tour-step .shepherd-footer {
+  padding: 14px 20px 18px;
+  border-top: 1px solid #2A2A2A;
+  margin-top: 10px;
+  gap: 8px;
+}
+.fiq-tour-step .shepherd-button { border-radius: 8px; font-size: 12px; font-weight: 700; padding: 8px 16px; border: none; cursor: pointer; transition: all 0.15s; }
+.fiq-btn-primary { background: #F5F5F5 !important; color: #141414 !important; }
+.fiq-btn-primary:hover { background: #E0E0E0 !important; }
+.fiq-btn-ghost { background: transparent !important; color: #6B7280 !important; border: 1px solid #2E2E2E !important; }
+.fiq-btn-ghost:hover { border-color: #4A4A4A !important; color: #F5F5F5 !important; }
+.fiq-btn-skip { background: transparent !important; color: #4B5563 !important; }
+.fiq-btn-skip:hover { color: #9CA3AF !important; }
+
+.shepherd-modal-overlay-container .shepherd-modal-mask { fill: rgba(0,0,0,.65); }
+
+.fiq-tour-step .shepherd-arrow::before {
+  background: #1C1C1C;
+  border: 1px solid #2E2E2E;
+}
+.shepherd-progress {
+  font-size: 10px;
+  color: #4B5563;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  padding: 4px 20px 0;
+}

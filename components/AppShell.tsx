@@ -1,5 +1,7 @@
 'use client';
 import { useState, useEffect, useRef, useCallback } from 'react';
+import dynamic from 'next/dynamic';
+const ProductTour = dynamic(() => import('./ProductTour'), { ssr: false });
 import type { User } from '@supabase/supabase-js';
 import { createClient } from '@/lib/supabase-browser';
 import {
@@ -1600,6 +1602,169 @@ const ProfilKort = ({ profil, onEdit, onResetAll }: { profil: Profil; onEdit:()=
   );
 };
 
+// ─── BankSettings ─────────────────────────────────────────────────────────────
+type BankConn = { bank_name: string | null; last_synced: string | null };
+
+const BankSettings = () => {
+  const supabase = createClient();
+  const [conn,    setConn]    = useState<BankConn | null | undefined>(undefined); // undefined = loading
+  const [syncing, setSyncing] = useState(false);
+  const [toast,   setToast]   = useState<{ msg: string; ok: boolean } | null>(null);
+  const [disconnecting, setDisconnecting] = useState(false);
+
+  const showToast = (msg: string, ok: boolean) => {
+    setToast({ msg, ok });
+    setTimeout(() => setToast(null), 4000);
+  };
+
+  // Load connection + handle ?tink= redirect param
+  useEffect(() => {
+    (async () => {
+      const { data: { user } } = await supabase.auth.getUser();
+      if (!user) { setConn(null); return; }
+      const { data } = await supabase
+        .from('user_bank_connections')
+        .select('bank_name, last_synced')
+        .eq('user_id', user.id)
+        .eq('is_active', true)
+        .maybeSingle();
+      setConn(data ?? null);
+
+      // Handle redirect from Tink callback
+      const params = new URLSearchParams(window.location.search);
+      const tinkParam = params.get('tink');
+      if (tinkParam === 'success') {
+        showToast('Bank tilkoblet!', true);
+        window.history.replaceState({}, '', window.location.pathname);
+        // Re-fetch after success
+        const { data: fresh } = await supabase
+          .from('user_bank_connections')
+          .select('bank_name, last_synced')
+          .eq('user_id', user.id)
+          .eq('is_active', true)
+          .maybeSingle();
+        setConn(fresh ?? null);
+      } else if (tinkParam === 'error') {
+        showToast('Tilkobling feilet. Prøv igjen.', false);
+        window.history.replaceState({}, '', window.location.pathname);
+      }
+    })();
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+
+  const handleConnect = async () => {
+    const res = await fetch('/api/tink/create-link', { method: 'POST' });
+    if (!res.ok) { showToast('Kunne ikke starte tilkobling', false); return; }
+    const { url } = await res.json() as { url: string };
+    window.location.href = url;
+  };
+
+  const handleSync = async () => {
+    setSyncing(true);
+    try {
+      const res = await fetch('/api/tink/sync', { method: 'POST' });
+      const data = await res.json() as { matched?: number; total?: number; error?: string };
+      if (!res.ok) { showToast(data.error ?? 'Synkronisering feilet', false); return; }
+      showToast(
+        data.matched === 0
+          ? `Ingen nye treff blant ${data.total} fakturaer`
+          : `${data.matched} faktura${data.matched === 1 ? '' : 'er'} automatisk markert som betalt!`,
+        true,
+      );
+      // Refresh last_synced
+      setConn(c => c ? { ...c, last_synced: new Date().toISOString() } : c);
+    } finally {
+      setSyncing(false);
+    }
+  };
+
+  const handleDisconnect = async () => {
+    setDisconnecting(true);
+    const res = await fetch('/api/tink/disconnect', { method: 'DELETE' });
+    setDisconnecting(false);
+    if (res.ok) { setConn(null); showToast('Bank frakoblet', true); }
+    else showToast('Kunne ikke koble fra', false);
+  };
+
+  const timeSince = (iso: string) => {
+    const mins = Math.floor((Date.now() - new Date(iso).getTime()) / 60_000);
+    if (mins < 1)  return 'akkurat nå';
+    if (mins < 60) return `${mins} min siden`;
+    const hrs = Math.floor(mins / 60);
+    if (hrs < 24)  return `${hrs} t siden`;
+    return `${Math.floor(hrs / 24)} d siden`;
+  };
+
+  return (
+    <Card hover={false} style={{ marginTop:16 }}>
+      <div style={{ display:'flex', justifyContent:'space-between', alignItems:'center', marginBottom:16 }}>
+        <h3 style={{ fontSize:18 }}>Bankintegrasjon</h3>
+        <span style={{ fontSize:10, letterSpacing:'0.12em', textTransform:'uppercase', color:C.green, background:`${C.green}18`, padding:'3px 8px', borderRadius:5, fontWeight:700 }}>Tink</span>
+      </div>
+
+      {/* Toast */}
+      {toast && (
+        <div style={{ marginBottom:12, padding:'10px 14px', borderRadius:8, fontSize:12, fontWeight:600,
+          background: toast.ok ? `${C.green}18` : `${C.red}18`,
+          color:      toast.ok ? C.green        : C.red,
+          border:     `1px solid ${toast.ok ? C.green : C.red}35`,
+        }}>
+          {toast.msg}
+        </div>
+      )}
+
+      {conn === undefined ? (
+        /* Loading skeleton */
+        <div style={{ height:40, borderRadius:8, background:`linear-gradient(90deg,${C.navyM} 25%,${C.navyB} 50%,${C.navyM} 75%)`, backgroundSize:'200% 100%', animation:'skeleton-shimmer 1.5s infinite' }}/>
+      ) : conn === null ? (
+        /* Not connected */
+        <div>
+          <p style={{ fontSize:13, color:C.gray, marginBottom:16, lineHeight:1.65 }}>
+            Koble til banken din for å synkronisere betalinger automatisk.
+            Fakturaer som matches mot banktransaksjoner markeres som betalt uten manuelt arbeid.
+          </p>
+          <button onClick={handleConnect}
+            style={{ padding:'11px 22px', background:C.green, color:'#fff', border:'none', borderRadius:9, fontSize:13, fontWeight:700, cursor:'pointer', display:'inline-flex', alignItems:'center', gap:8, transition:'opacity 0.15s' }}
+            onMouseEnter={e=>(e.currentTarget.style.opacity='0.85')}
+            onMouseLeave={e=>(e.currentTarget.style.opacity='1')}>
+            🏦 Koble til bank
+          </button>
+          <p style={{ fontSize:11, color:C.grayD, marginTop:10 }}>
+            Powered by Tink · Les-tilgang kun · Ingen skrivetilgang til konto
+          </p>
+        </div>
+      ) : (
+        /* Connected */
+        <div>
+          <div style={{ display:'flex', alignItems:'center', gap:10, marginBottom:16, padding:'12px 14px', background:`${C.green}10`, border:`1px solid ${C.green}30`, borderRadius:10 }}>
+            <span style={{ fontSize:20 }}>✅</span>
+            <div>
+              <div style={{ fontSize:13, fontWeight:700, color:C.white }}>{conn.bank_name ?? 'Bank'}</div>
+              <div style={{ fontSize:11, color:C.gray, marginTop:2 }}>
+                {conn.last_synced
+                  ? `Sist synkronisert: ${timeSince(conn.last_synced)}`
+                  : 'Aldri synkronisert'}
+              </div>
+            </div>
+          </div>
+
+          <div style={{ display:'flex', gap:8, flexWrap:'wrap' }}>
+            <button onClick={handleSync} disabled={syncing}
+              style={{ padding:'9px 20px', background:syncing?C.navyB:C.white, color:C.navy, border:'none', borderRadius:8, fontSize:12, fontWeight:700, cursor:syncing?'not-allowed':'pointer', display:'inline-flex', alignItems:'center', gap:6, transition:'all 0.15s' }}>
+              {syncing && <span style={{ width:10, height:10, borderRadius:'50%', border:`2px solid ${C.navy}`, borderTopColor:'transparent', animation:'spin 0.7s linear infinite', display:'inline-block' }}/>}
+              {syncing ? 'Synkroniserer…' : '↺ Synkroniser nå'}
+            </button>
+            <button onClick={handleDisconnect} disabled={disconnecting}
+              style={{ padding:'9px 18px', background:'transparent', color:disconnecting?C.grayD:C.red, border:`1px solid ${disconnecting?C.border:C.red}40`, borderRadius:8, fontSize:12, fontWeight:500, cursor:disconnecting?'not-allowed':'pointer', transition:'all 0.15s' }}>
+              {disconnecting ? '…' : 'Koble fra'}
+            </button>
+          </div>
+        </div>
+      )}
+    </Card>
+  );
+};
+
 // ─── Settings ─────────────────────────────────────────────────────────────────
 interface SettingsProps {
   faste: Partial<FasteKostnader>; onFasteChange: (f:FasteKostnader)=>Promise<void>;
@@ -1613,6 +1778,7 @@ const Settings = ({ faste, onFasteChange, ansatte, onAddAnsatt, onDeleteAnsatt, 
       <div style={{ height:profil?16:0 }}/>
       <FasteSettings faste={faste} onChange={onFasteChange}/>
       {profil?.antallAnsatte !== 'Bare meg selv' && <AnsatteSettings ansatte={ansatte} onAdd={onAddAnsatt} onDelete={onDeleteAnsatt}/>}
+      <BankSettings />
       <Card hover={false} style={{ marginTop:16 }}>
         <h3 style={{ fontSize:18, marginBottom:12 }}>Om FinanceIQ</h3>
         <div style={{ color:C.gray, fontSize:13, lineHeight:1.8 }}>
@@ -1659,6 +1825,10 @@ export default function AppShell({ user, currentMonth, initialProfil, initialMaa
   const [ansatte,        setAnsatte]        = useState<Ansatt[]>(() => initialAnsatte.map(mapDbAnsatt));
   const [profil,         setProfil]         = useState<Profil|null>(() => initialProfil ? mapDbProfil(initialProfil) : null);
   const [showOnboarding, setShowOnboarding] = useState(false);
+  const [tourAutoStart,  setTourAutoStart]  = useState(false);
+
+  // Trigger auto-start once the component mounts (needs to run client-side)
+  useEffect(() => { setTourAutoStart(true); }, []);
 
   const saved = allData.map(d => d.month);
   const currentData = allData.find(d => d.month === month) || null;
@@ -1778,6 +1948,14 @@ export default function AppShell({ user, currentMonth, initialProfil, initialMaa
           <div style={{ fontSize:11, color:C.grayD, textAlign:'right', lineHeight:1.6 }}>
             {saved.length > 0 ? `${saved.length} mnd. lagret` : 'Ingen data ennå'}
           </div>
+          <button id="tour-help-btn"
+            onClick={() => (window as Window & { __fiqStartTour?: () => void }).__fiqStartTour?.()}
+            title="Vis tutorial"
+            style={{ width:30, height:30, display:'flex', alignItems:'center', justifyContent:'center', background:'transparent', border:`1px solid ${C.border}`, borderRadius:7, color:C.grayD, fontSize:14, fontWeight:700, cursor:'pointer', transition:'all 0.15s', flexShrink:0 }}
+            onMouseEnter={e=>{(e.currentTarget as HTMLButtonElement).style.borderColor=C.amber;(e.currentTarget as HTMLButtonElement).style.color=C.amber;}}
+            onMouseLeave={e=>{(e.currentTarget as HTMLButtonElement).style.borderColor=C.border;(e.currentTarget as HTMLButtonElement).style.color=C.grayD;}}>
+            ?
+          </button>
           <button onClick={handleLogout}
             style={{ padding:'7px 14px', background:'transparent', border:`1px solid ${C.border}`, borderRadius:7, color:C.grayD, fontSize:11, cursor:'pointer', transition:'all 0.15s' }}
             onMouseEnter={e=>{(e.currentTarget as HTMLButtonElement).style.borderColor=C.red;(e.currentTarget as HTMLButtonElement).style.color=C.red;}}
@@ -1790,13 +1968,13 @@ export default function AppShell({ user, currentMonth, initialProfil, initialMaa
       {/* Nav */}
       <nav className="nav-tabs" style={{ borderBottom:`1px solid ${C.border}`, padding:'0 8px' }}>
         {TABS.map(t => (
-          <button key={t.id} onClick={()=>setTab(t.id)} className="nav-tab-btn" style={{ padding:'13px 18px', background:'transparent', border:'none', borderBottom:tab===t.id?`2px solid ${C.amber}`:'2px solid transparent', color:tab===t.id?C.amber:C.gray, cursor:'pointer', fontSize:13, letterSpacing:'0.03em', transition:'all 0.15s', marginBottom:-1, display:'flex', alignItems:'center', gap:6 }}>
+          <button key={t.id} id={t.id === 'dashboard' ? 'tour-dashboard-tab' : t.id === 'ai' ? 'tour-ai-tab' : undefined} onClick={()=>setTab(t.id)} className="nav-tab-btn" style={{ padding:'13px 18px', background:'transparent', border:'none', borderBottom:tab===t.id?`2px solid ${C.amber}`:'2px solid transparent', color:tab===t.id?C.amber:C.gray, cursor:'pointer', fontSize:13, letterSpacing:'0.03em', transition:'all 0.15s', marginBottom:-1, display:'flex', alignItems:'center', gap:6 }}>
             {t.label}
             {t.id==='dashboard' && dashboardWarnings.some(w=>w.level==='red') && <span style={{ width:6, height:6, borderRadius:'50%', background:C.red, display:'inline-block', animation:'pulse-dot 2s infinite' }}/>}
             {t.id==='entry' && saved.includes(month) && <span style={{ width:5, height:5, borderRadius:'50%', background:C.amber, display:'inline-block' }}/>}
           </button>
         ))}
-        <a href="/app/admin/test-parsing" className="nav-tab-btn" style={{ padding:'13px 18px', background:'transparent', border:'none', borderBottom:'2px solid transparent', color:C.gray, cursor:'pointer', fontSize:13, letterSpacing:'0.03em', transition:'all 0.15s', marginBottom:-1, display:'flex', alignItems:'center', gap:6, textDecoration:'none' }}
+        <a id="tour-faktura-link" href="/app/admin/test-parsing" className="nav-tab-btn" style={{ padding:'13px 18px', background:'transparent', border:'none', borderBottom:'2px solid transparent', color:C.gray, cursor:'pointer', fontSize:13, letterSpacing:'0.03em', transition:'all 0.15s', marginBottom:-1, display:'flex', alignItems:'center', gap:6, textDecoration:'none' }}
           onMouseEnter={e=>{(e.currentTarget as HTMLAnchorElement).style.color=C.amber;}}
           onMouseLeave={e=>{(e.currentTarget as HTMLAnchorElement).style.color=C.gray;}}>
           Fakturaer
@@ -1820,10 +1998,16 @@ export default function AppShell({ user, currentMonth, initialProfil, initialMaa
       </main>
 
       {/* Footer */}
-      <footer style={{ borderTop:`1px solid ${C.border}`, padding:'16px 32px', display:'flex', justifyContent:'space-between', fontSize:11, color:C.grayD }}>
+      <footer style={{ borderTop:`1px solid ${C.border}`, padding:'16px 32px', display:'flex', justifyContent:'space-between', alignItems:'center', fontSize:11, color:C.grayD }}>
         <span>FinanceIQ v1.0 — Norsk regnskapsverktøy for småbedrifter</span>
+        <span id="tour-invoice-email" style={{ display:'flex', alignItems:'center', gap:6 }}>
+          📧 <span style={{ fontWeight:700, color:C.grayD, letterSpacing:'0.01em' }}>fakturaer@financeiq.no</span>
+        </span>
         <span>{user.email} · NOK</span>
       </footer>
+
+      {/* Product Tour */}
+      <ProductTour autoStart={tourAutoStart} />
     </div>
   );
 }
