@@ -75,59 +75,78 @@ input[type=number] { -moz-appearance: textfield; }
 }
 
 /* ─── Shepherd.js / Product Tour ────────────────────────────── */
-.shepherd-has-cancel-icon .shepherd-cancel-icon { color: #9CA3AF; font-size: 22px; line-height: 1; }
-.shepherd-has-cancel-icon .shepherd-cancel-icon:hover { color: #F9FAFB; }
+/* Use !important throughout — Shepherd's bundled CSS loads after ours and
+   has high-specificity rules that otherwise override custom colors.        */
+
+.shepherd-has-cancel-icon .shepherd-cancel-icon { color: #9CA3AF !important; font-size: 22px; line-height: 1; }
+.shepherd-has-cancel-icon .shepherd-cancel-icon:hover { color: #F9FAFB !important; }
 
 .fiq-tour-step.shepherd-element {
-  background: #111827;
-  border: 1px solid #374151;
-  border-radius: 12px;
-  box-shadow: 0 24px 64px rgba(0,0,0,.8);
-  max-width: 360px;
-  font-family: 'Cabinet Grotesk', sans-serif;
+  background: #111827 !important;
+  border: 1px solid #374151 !important;
+  border-radius: 12px !important;
+  box-shadow: 0 24px 64px rgba(0,0,0,.8) !important;
+  max-width: 380px !important;
+  font-family: 'Cabinet Grotesk', sans-serif !important;
+}
+.fiq-tour-step .shepherd-content {
+  background: #111827 !important;
+  border-radius: 12px !important;
 }
 .fiq-tour-step .shepherd-header {
-  background: transparent;
-  padding: 18px 20px 0;
-  border-bottom: none;
+  background: #111827 !important;
+  padding: 20px 22px 0 !important;
+  border-bottom: none !important;
 }
 .fiq-tour-step .shepherd-title {
-  font-size: 16px;
-  font-weight: 800;
-  color: #F9FAFB;
-  letter-spacing: -0.01em;
+  font-size: 16px !important;
+  font-weight: 800 !important;
+  color: #F9FAFB !important;
+  letter-spacing: -0.01em !important;
 }
 .fiq-tour-step .shepherd-text {
-  color: #D1D5DB;
-  font-size: 13px;
-  line-height: 1.65;
-  padding: 10px 20px 6px;
+  color: #F3F4F6 !important;
+  font-size: 13.5px !important;
+  line-height: 1.7 !important;
+  padding: 12px 22px 8px !important;
 }
-.fiq-tour-step .shepherd-text strong { color: #F9FAFB; }
+.fiq-tour-step .shepherd-text p { color: #F3F4F6 !important; }
+.fiq-tour-step .shepherd-text strong { color: #ffffff !important; }
+.fiq-tour-step .shepherd-text a { color: #10b981 !important; }
 .fiq-tour-step .shepherd-footer {
-  padding: 14px 20px 18px;
-  border-top: 1px solid #1F2937;
-  margin-top: 10px;
-  gap: 8px;
+  padding: 14px 22px 20px !important;
+  border-top: 1px solid #1F2937 !important;
+  margin-top: 10px !important;
+  gap: 8px !important;
+  background: #111827 !important;
+  border-radius: 0 0 12px 12px !important;
 }
-.fiq-tour-step .shepherd-button { border-radius: 8px; font-size: 12px; font-weight: 700; padding: 8px 16px; border: none; cursor: pointer; transition: all 0.15s; }
+.fiq-tour-step .shepherd-button {
+  border-radius: 8px !important;
+  font-size: 12px !important;
+  font-weight: 700 !important;
+  padding: 8px 16px !important;
+  border: none !important;
+  cursor: pointer !important;
+  transition: all 0.15s !important;
+}
 .fiq-btn-primary { background: #10b981 !important; color: #ffffff !important; }
 .fiq-btn-primary:hover { background: #059669 !important; }
 .fiq-btn-ghost { background: transparent !important; color: #9CA3AF !important; border: 1px solid #374151 !important; }
 .fiq-btn-ghost:hover { border-color: #6B7280 !important; color: #F9FAFB !important; }
-.fiq-btn-skip { background: transparent !important; color: #6B7280 !important; }
-.fiq-btn-skip:hover { color: #9CA3AF !important; }
+.fiq-btn-skip { background: transparent !important; color: #6B7280 !important; border: none !important; }
+.fiq-btn-skip:hover { color: #D1D5DB !important; }
 
-.shepherd-modal-overlay-container .shepherd-modal-mask { fill: rgba(0,0,0,.65); }
+.shepherd-modal-overlay-container .shepherd-modal-mask { fill: rgba(0,0,0,.7) !important; }
 
 .fiq-tour-step .shepherd-arrow::before {
-  background: #111827;
-  border: 1px solid #374151;
+  background: #111827 !important;
+  border: 1px solid #374151 !important;
 }
 .shepherd-progress {
-  font-size: 10px;
-  color: #9CA3AF;
-  letter-spacing: 0.1em;
-  text-transform: uppercase;
-  padding: 4px 20px 0;
+  font-size: 10px !important;
+  color: #6B7280 !important;
+  letter-spacing: 0.1em !important;
+  text-transform: uppercase !important;
+  padding: 4px 22px 0 !important;
 }
