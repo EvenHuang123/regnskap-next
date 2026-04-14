@@ -20,11 +20,6 @@ export async function POST() {
     scope:        'accounts:read,transactions:read,balances:read',
   });
 
-  // In sandbox mode, force the demo bank so testers don't need real BankID
-  if (process.env.TINK_ENVIRONMENT === 'sandbox') {
-    params.set('test', 'true');
-  }
-
   const url = `https://link.tink.com/1.0/transactions/connect-accounts?${params}`;
   return NextResponse.json({ url });
 }
