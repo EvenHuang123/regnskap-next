@@ -1602,6 +1602,244 @@ const ProfilKort = ({ profil, onEdit, onResetAll }: { profil: Profil; onEdit:()=
   );
 };
 
+// ─── CsvBankUpload ────────────────────────────────────────────────────────────
+// Client-side CSV parsing → preview → POST to /api/bank/upload
+
+type CsvTx     = { date: string; amount: number; description: string };
+type UploadStep = 'idle' | 'preview' | 'loading' | 'done' | 'error';
+
+const CsvBankUpload = () => {
+  const [step,     setStep]     = useState<UploadStep>('idle');
+  const [parsed,   setParsed]   = useState<CsvTx[]>([]);
+  const [format,   setFormat]   = useState('');
+  const [skipped,  setSkipped]  = useState(0);
+  const [result,   setResult]   = useState<{ stored: number; matched: number; total_fakturaer: number } | null>(null);
+  const [errMsg,   setErrMsg]   = useState('');
+  const [dragging, setDragging] = useState(false);
+  const inputRef = useRef<HTMLInputElement>(null);
+
+  const processFile = (file: File) => {
+    if (!file.name.endsWith('.csv') && file.type !== 'text/csv' && !file.type.includes('spreadsheet')) {
+      setErrMsg('Kun CSV-filer støttes. Last ned kontoutskriften som CSV fra nettbanken.');
+      setStep('error');
+      return;
+    }
+    const reader = new FileReader();
+    reader.onload = async (e) => {
+      try {
+        // Dynamically import so the parser is never bundled into SSR
+        const { parseCsv } = await import('@/lib/csv-parser');
+        const content = e.target?.result as string;
+        const { transactions, skipped: sk, format: fmt } = parseCsv(content);
+        if (transactions.length === 0) {
+          setErrMsg('Ingen gyldige transaksjoner funnet. Sjekk at riktig CSV-fil er valgt.');
+          setStep('error');
+          return;
+        }
+        setParsed(transactions);
+        setFormat(fmt);
+        setSkipped(sk);
+        setStep('preview');
+      } catch (err) {
+        setErrMsg(err instanceof Error ? err.message : 'Parsing feilet');
+        setStep('error');
+      }
+    };
+    reader.readAsText(file, 'UTF-8');
+  };
+
+  const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (file) processFile(file);
+    if (inputRef.current) inputRef.current.value = '';
+  };
+
+  const handleDrop = (e: React.DragEvent) => {
+    e.preventDefault();
+    setDragging(false);
+    const file = e.dataTransfer.files[0];
+    if (file) processFile(file);
+  };
+
+  const handleConfirm = async () => {
+    setStep('loading');
+    try {
+      const res = await fetch('/api/bank/upload', {
+        method:  'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body:    JSON.stringify({ transactions: parsed }),
+      });
+      const data = await res.json() as { stored?: number; matched?: number; total_fakturaer?: number; error?: string };
+      if (!res.ok) { setErrMsg(data.error ?? 'Opplasting feilet'); setStep('error'); return; }
+      setResult({ stored: data.stored ?? 0, matched: data.matched ?? 0, total_fakturaer: data.total_fakturaer ?? 0 });
+      setStep('done');
+    } catch (err) {
+      setErrMsg(err instanceof Error ? err.message : 'Nettverksfeil');
+      setStep('error');
+    }
+  };
+
+  const reset = () => { setStep('idle'); setParsed([]); setResult(null); setErrMsg(''); };
+
+  const fmtAmt = (n: number) =>
+    new Intl.NumberFormat('nb-NO', { style: 'currency', currency: 'NOK', maximumFractionDigits: 0 }).format(n);
+
+  return (
+    <Card hover={false} style={{ marginTop:16 }}>
+      <div style={{ display:'flex', justifyContent:'space-between', alignItems:'center', marginBottom:16 }}>
+        <h3 style={{ fontSize:18 }}>Kontoutskrift (CSV)</h3>
+        <span style={{ fontSize:10, letterSpacing:'0.12em', textTransform:'uppercase', color:C.amber, background:`${C.amber}18`, padding:'3px 8px', borderRadius:5, fontWeight:700 }}>DNB · Nordea · SpareBank 1</span>
+      </div>
+
+      {/* ── idle: drag-drop zone ── */}
+      {step === 'idle' && (
+        <div>
+          <p style={{ fontSize:13, color:C.gray, marginBottom:16, lineHeight:1.65 }}>
+            Last ned kontoutskriften som CSV fra nettbanken din og last den opp her.
+            Fakturaer som matches mot transaksjoner markeres automatisk som betalt.
+          </p>
+          <div
+            onDrop={handleDrop}
+            onDragOver={e => { e.preventDefault(); setDragging(true); }}
+            onDragLeave={() => setDragging(false)}
+            onClick={() => inputRef.current?.click()}
+            style={{
+              border: `2px dashed ${dragging ? C.amber : C.border}`,
+              borderRadius: 10,
+              padding: '32px 24px',
+              textAlign: 'center',
+              cursor: 'pointer',
+              transition: 'border-color 0.15s, background 0.15s',
+              background: dragging ? `${C.amber}08` : 'transparent',
+            }}
+          >
+            <div style={{ fontSize:28, marginBottom:8 }}>📂</div>
+            <div style={{ fontSize:13, fontWeight:700, color:C.white, marginBottom:4 }}>
+              Slipp CSV-filen her
+            </div>
+            <div style={{ fontSize:12, color:C.grayD }}>eller klikk for å velge fil</div>
+          </div>
+          <input ref={inputRef} type="file" accept=".csv,text/csv" style={{ display:'none' }} onChange={handleFileChange}/>
+          <button
+            onClick={() => inputRef.current?.click()}
+            style={{ marginTop:12, padding:'10px 20px', background:C.navyM, border:`1px solid ${C.border}`, borderRadius:8, color:C.gray, fontSize:12, fontWeight:600, cursor:'pointer', width:'100%', transition:'all 0.15s' }}
+            onMouseEnter={e=>(e.currentTarget.style.borderColor=C.amber)}
+            onMouseLeave={e=>(e.currentTarget.style.borderColor=C.border)}>
+            Last opp kontoutskrift
+          </button>
+        </div>
+      )}
+
+      {/* ── preview: table of transactions ── */}
+      {step === 'preview' && (
+        <div>
+          <div style={{ display:'flex', alignItems:'center', gap:10, marginBottom:14, padding:'10px 14px', background:`${C.amber}10`, border:`1px solid ${C.amber}30`, borderRadius:8 }}>
+            <span style={{ fontSize:18 }}>✅</span>
+            <div style={{ fontSize:13 }}>
+              <strong style={{ color:C.white }}>{parsed.length} transaksjoner</strong>
+              <span style={{ color:C.gray }}> lest fra {format}-format</span>
+              {skipped > 0 && <span style={{ color:C.grayD }}> · {skipped} rader hoppet over</span>}
+            </div>
+          </div>
+
+          {/* Preview table — first 8 rows */}
+          <div style={{ overflowX:'auto', marginBottom:16, borderRadius:8, border:`1px solid ${C.border}` }}>
+            <table style={{ width:'100%', borderCollapse:'collapse', fontSize:12 }}>
+              <thead>
+                <tr style={{ background:C.navyM }}>
+                  {['Dato','Beskrivelse','Beløp'].map(h => (
+                    <th key={h} style={{ padding:'9px 12px', textAlign: h === 'Beløp' ? 'right' : 'left', color:C.gray, fontWeight:600, whiteSpace:'nowrap' }}>{h}</th>
+                  ))}
+                </tr>
+              </thead>
+              <tbody>
+                {parsed.slice(0, 8).map((tx, i) => (
+                  <tr key={i} style={{ borderTop:`1px solid ${C.navyM}` }}>
+                    <td style={{ padding:'8px 12px', color:C.grayD, whiteSpace:'nowrap' }}>{tx.date}</td>
+                    <td style={{ padding:'8px 12px', color:C.white, maxWidth:220, overflow:'hidden', textOverflow:'ellipsis', whiteSpace:'nowrap' }}>{tx.description}</td>
+                    <td style={{ padding:'8px 12px', textAlign:'right', color: tx.amount < 0 ? C.red : C.green, fontWeight:600, whiteSpace:'nowrap' }}>{fmtAmt(tx.amount)}</td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+            {parsed.length > 8 && (
+              <div style={{ padding:'8px 12px', fontSize:11, color:C.grayD, background:C.navyM, textAlign:'center' }}>
+                … og {parsed.length - 8} til
+              </div>
+            )}
+          </div>
+
+          <div style={{ display:'flex', gap:8 }}>
+            <button onClick={handleConfirm}
+              style={{ flex:1, padding:'11px', background:C.white, color:C.navy, border:'none', borderRadius:8, fontSize:13, fontWeight:700, cursor:'pointer', transition:'all 0.15s' }}
+              onMouseEnter={e=>(e.currentTarget.style.background=C.grayD)}
+              onMouseLeave={e=>(e.currentTarget.style.background=C.white)}>
+              Importer og match →
+            </button>
+            <button onClick={reset}
+              style={{ padding:'11px 18px', background:'transparent', color:C.gray, border:`1px solid ${C.border}`, borderRadius:8, fontSize:13, cursor:'pointer' }}>
+              Avbryt
+            </button>
+          </div>
+        </div>
+      )}
+
+      {/* ── loading ── */}
+      {step === 'loading' && (
+        <div style={{ textAlign:'center', padding:'32px 0' }}>
+          <div style={{ width:28, height:28, borderRadius:'50%', border:`3px solid ${C.navyM}`, borderTopColor:C.amber, animation:'spin 0.8s linear infinite', margin:'0 auto 14px' }}/>
+          <div style={{ fontSize:13, color:C.gray }}>Lagrer og matcher transaksjoner…</div>
+        </div>
+      )}
+
+      {/* ── done: results ── */}
+      {step === 'done' && result && (
+        <div>
+          <div style={{ padding:'16px 20px', background:`${C.green}12`, border:`1px solid ${C.green}30`, borderRadius:10, marginBottom:14, textAlign:'center' }}>
+            <div style={{ fontSize:32, marginBottom:6 }}>🎉</div>
+            {result.matched > 0 ? (
+              <>
+                <div style={{ fontSize:16, fontWeight:800, color:C.white, marginBottom:4 }}>
+                  {result.matched} faktura{result.matched === 1 ? '' : 'er'} automatisk markert som betalt!
+                </div>
+                <div style={{ fontSize:12, color:C.gray }}>
+                  {result.stored} transaksjoner importert · {result.total_fakturaer} fakturaer sjekket
+                </div>
+              </>
+            ) : (
+              <>
+                <div style={{ fontSize:14, fontWeight:700, color:C.white, marginBottom:4 }}>
+                  {result.stored} transaksjoner importert
+                </div>
+                <div style={{ fontSize:12, color:C.gray }}>
+                  Ingen nye treff mot {result.total_fakturaer} ubetalte fakturaer
+                </div>
+              </>
+            )}
+          </div>
+          <button onClick={reset}
+            style={{ width:'100%', padding:'10px', background:'transparent', color:C.gray, border:`1px solid ${C.border}`, borderRadius:8, fontSize:12, cursor:'pointer' }}>
+            Last opp en ny fil
+          </button>
+        </div>
+      )}
+
+      {/* ── error ── */}
+      {step === 'error' && (
+        <div>
+          <div style={{ padding:'12px 16px', background:`${C.red}12`, border:`1px solid ${C.red}30`, borderRadius:8, fontSize:13, color:C.red, marginBottom:14 }}>
+            ⚠️ {errMsg}
+          </div>
+          <button onClick={reset}
+            style={{ padding:'9px 20px', background:'transparent', color:C.gray, border:`1px solid ${C.border}`, borderRadius:8, fontSize:12, cursor:'pointer' }}>
+            Prøv igjen
+          </button>
+        </div>
+      )}
+    </Card>
+  );
+};
+
 // ─── BankSettings ─────────────────────────────────────────────────────────────
 type BankConn = { bank_name: string | null; last_synced: string | null };
 
@@ -1779,6 +2017,7 @@ const Settings = ({ faste, onFasteChange, ansatte, onAddAnsatt, onDeleteAnsatt, 
       <FasteSettings faste={faste} onChange={onFasteChange}/>
       {profil?.antallAnsatte !== 'Bare meg selv' && <AnsatteSettings ansatte={ansatte} onAdd={onAddAnsatt} onDelete={onDeleteAnsatt}/>}
       <BankSettings />
+      <CsvBankUpload />
       <Card hover={false} style={{ marginTop:16 }}>
         <h3 style={{ fontSize:18, marginBottom:12 }}>Om FinanceIQ</h3>
         <div style={{ color:C.gray, fontSize:13, lineHeight:1.8 }}>
