@@ -92,12 +92,16 @@ export default function FakturaerPage({ params }: { params: Promise<{ month: str
     setPageLoading(true); setPageError(null);
     const { data:{ user } } = await supabase.auth.getUser();
     if (!user) { window.location.href = '/login'; return; }
+    const [y, mo] = month.split('-').map(Number);
+    const nextMonth = mo === 12
+      ? `${y + 1}-01-01`
+      : `${y}-${String(mo + 1).padStart(2, '0')}-01`;
     const { data, error } = await supabase
       .from('fakturaer')
       .select('id,leverandor,belop,dato,mva,kategori,pdf_url,status')
       .eq('user_id', user.id)
       .gte('dato', `${month}-01`)
-      .lte('dato', `${month}-31`)
+      .lt('dato', nextMonth)
       .order('dato', { ascending: false });
     if (error) setPageError(error.message);
     else setFakturaer((data ?? []) as Faktura[]);
