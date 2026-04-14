@@ -2,7 +2,7 @@ import { createServerClient } from '@supabase/ssr';
 import { NextResponse, type NextRequest } from 'next/server';
 
 // Paths that are always publicly accessible (no auth required, no redirects)
-const PUBLIC_PATHS = ['/'];
+const PUBLIC_PATHS = ['/', '/api/email'];
 
 // Paths that are public but redirect authenticated users to the app
 const AUTH_ENTRY_PATHS = ['/login', '/register'];
