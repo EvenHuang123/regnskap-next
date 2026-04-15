@@ -88,64 +88,50 @@ const slugify = (s: string) =>
 // ── Fetch attachment content from Resend API ──────────────────────────────────
 
 async function fetchAttachmentBase64(emailId: string, attachmentId: string): Promise<string> {
-  // Debug: log which env vars are present (never log values)
-  log('Env check', {
-    hasResendKey:   !!process.env.RESEND_API_KEY,
-    resendKeyLen:   process.env.RESEND_API_KEY?.length ?? 0,
-    nodeEnv:        process.env.NODE_ENV,
-  });
-
   const apiKey = process.env.RESEND_API_KEY;
   if (!apiKey) throw new Error('RESEND_API_KEY not configured');
 
-  // Try the attachment-specific endpoint first
-  const attUrl = `https://api.resend.com/emails/${emailId}/attachments/${attachmentId}`;
-  log('Fetching attachment from Resend', { url: attUrl });
+  // Resend inbound uses a separate /receiving/ namespace — not /emails/
+  const listUrl = `https://api.resend.com/emails/receiving/${emailId}/attachments`;
+  log('Listing attachments from Resend inbound API', { url: listUrl });
 
-  const attRes = await fetch(attUrl, {
+  const listRes = await fetch(listUrl, {
     headers: { Authorization: `Bearer ${apiKey}` },
   });
 
-  if (attRes.ok) {
-    const attJson = await attRes.json() as Record<string, unknown>;
-    log('Resend attachment response keys', Object.keys(attJson));
-
-    // The content may be base64 string or a Buffer-like object
-    const content = attJson.content ?? attJson.data ?? attJson.body;
-    if (typeof content === 'string' && content.length > 0) {
-      return content;
-    }
-  } else {
-    log('Attachment endpoint failed', { status: attRes.status, text: await attRes.text() });
+  if (!listRes.ok) {
+    throw new Error(`Resend attachments list failed: ${listRes.status} ${await listRes.text()}`);
   }
 
-  // Fallback: fetch the full email and find the attachment there
-  const emailUrl = `https://api.resend.com/emails/${emailId}`;
-  log('Falling back to full email fetch', { url: emailUrl });
+  const listJson = await listRes.json() as { data?: Record<string, unknown>[] } | Record<string, unknown>[];
+  const attachments: Record<string, unknown>[] = Array.isArray(listJson)
+    ? listJson
+    : (listJson as { data?: Record<string, unknown>[] }).data ?? [];
 
-  const emailRes = await fetch(emailUrl, {
-    headers: { Authorization: `Bearer ${apiKey}` },
-  });
+  log('Resend attachments list', attachments.map(a => ({ id: a.id, filename: a.filename, size: a.size })));
 
-  if (!emailRes.ok) {
-    throw new Error(`Resend email fetch failed: ${emailRes.status} ${await emailRes.text()}`);
+  const match = attachments.find(a => a.id === attachmentId);
+  if (!match) {
+    throw new Error(`Attachment ${attachmentId} not found in received email ${emailId}`);
   }
 
-  const fullEmail = await emailRes.json() as Record<string, unknown>;
-  log('Full email response keys', Object.keys(fullEmail));
-
-  // Find our attachment in the full email response
-  const attachments = fullEmail.attachments as Record<string, unknown>[] | undefined;
-  if (Array.isArray(attachments)) {
-    const match = attachments.find(a => a.id === attachmentId || a.filename !== undefined);
-    if (match) {
-      const content = match.content ?? match.data ?? match.body;
-      if (typeof content === 'string' && content.length > 0) return content;
-      log('Attachment found in full email but content missing', { keys: Object.keys(match) });
-    }
+  const downloadUrl = match.download_url as string | undefined;
+  if (!downloadUrl) {
+    throw new Error(`No download_url on attachment ${attachmentId} — keys: ${Object.keys(match).join(', ')}`);
   }
 
-  throw new Error(`Could not retrieve attachment content for id=${attachmentId}`);
+  log('Downloading attachment from CDN', { url: downloadUrl.slice(0, 80) });
+
+  const dlRes = await fetch(downloadUrl);
+  if (!dlRes.ok) {
+    throw new Error(`Attachment download failed: ${dlRes.status}`);
+  }
+
+  // Convert binary response to base64
+  const arrayBuffer = await dlRes.arrayBuffer();
+  const base64 = Buffer.from(arrayBuffer).toString('base64');
+  log('Attachment downloaded', { bytes: arrayBuffer.byteLength, base64Len: base64.length });
+  return base64;
 }
 
 // ── PDF parsing via Anthropic ─────────────────────────────────────────────────
