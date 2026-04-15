@@ -1,16 +1,17 @@
 /**
- * Inbound email webhook — receives forwarded invoices via Postmark inbound.
+ * Inbound email webhook — receives forwarded invoices via Resend inbound.
  *
- * Postmark delivers inbound messages as POST JSON to this route.
+ * Resend delivers inbound messages as POST JSON to this route.
  *
  * Required environment variables:
  *   ANTHROPIC_API_KEY          — already set
  *   NEXT_PUBLIC_SUPABASE_URL   — already set
  *   SUPABASE_SERVICE_ROLE_KEY  — add in Vercel dashboard (Settings → Environment Variables)
+ *   RESEND_API_KEY             — add in Vercel dashboard (Settings → Environment Variables)
  *
- * Postmark setup:
- *   1. Create an Inbound Stream in Postmark dashboard
- *   2. Set the webhook URL to: https://<your-domain>/api/email
+ * Resend setup:
+ *   1. Add your domain in Resend dashboard → Domains
+ *   2. Create an Inbound route pointing to: https://<your-domain>/api/email
  *   3. Users register their sender address in the user_emails table
  */
 
@@ -31,17 +32,17 @@ const supabaseAdmin = () => {
 
 // ── Types ─────────────────────────────────────────────────────────────────────
 
-/** Postmark inbound webhook payload */
-interface PostmarkPayload {
-  From:        string;
-  Subject?:    string;
-  TextBody?:   string;
-  HtmlBody?:   string;
-  Attachments: {
-    Name:          string;
-    Content:       string;   // base64-encoded
-    ContentType:   string;
-    ContentLength: number;
+/** Resend inbound webhook payload */
+interface ResendPayload {
+  from:        string;
+  to:          string;
+  subject?:    string;
+  html?:       string;
+  text?:       string;
+  attachments: {
+    filename:    string;
+    content:     string;   // base64-encoded
+    contentType: string;
   }[];
 }
 
@@ -111,16 +112,16 @@ Regler:
 
 export async function POST(req: Request) {
   // ── 1. Parse request body ──────────────────────────────────────────────────
-  let payload: PostmarkPayload;
+  let payload: ResendPayload;
   try {
-    payload = await req.json() as PostmarkPayload;
+    payload = await req.json() as ResendPayload;
   } catch {
     log('Failed to parse JSON body');
     return NextResponse.json({ error: 'Invalid JSON body' }, { status: 400 });
   }
 
-  const from = payload.From?.toLowerCase().trim();
-  log('Received email', { from, subject: payload.Subject, attachments: payload.Attachments?.length ?? 0 });
+  const from = payload.from?.toLowerCase().trim();
+  log('Received email', { from, subject: payload.subject, attachments: payload.attachments?.length ?? 0 });
 
   if (!from) {
     log('Missing sender address');
@@ -128,15 +129,15 @@ export async function POST(req: Request) {
   }
 
   // ── 2. Find PDF attachment ─────────────────────────────────────────────────
-  const pdfAttachment = payload.Attachments?.find(
-    a => a.ContentType === 'application/pdf' || a.Name?.toLowerCase().endsWith('.pdf')
+  const pdfAttachment = payload.attachments?.find(
+    a => a.contentType === 'application/pdf' || a.filename?.toLowerCase().endsWith('.pdf')
   );
 
   if (!pdfAttachment) {
     log('No PDF attachment found');
     return NextResponse.json({ error: 'No PDF attachment found in email' }, { status: 400 });
   }
-  log('Found PDF attachment', { filename: pdfAttachment.Name });
+  log('Found PDF attachment', { filename: pdfAttachment.filename });
 
   // ── 3. Look up user by sender email ───────────────────────────────────────
   let supabase: ReturnType<typeof supabaseAdmin>;
@@ -168,7 +169,7 @@ export async function POST(req: Request) {
   // ── 4. Parse PDF with Anthropic ────────────────────────────────────────────
   let parsed: ParsedInvoice;
   try {
-    parsed = await parsePdf(pdfAttachment.Content);
+    parsed = await parsePdf(pdfAttachment.content);
     log('Parsed invoice', parsed);
   } catch (e) {
     const msg = e instanceof Error ? e.message : 'Unknown error';
@@ -180,7 +181,7 @@ export async function POST(req: Request) {
   const dato      = parsed.dato ?? new Date().toISOString().slice(0, 10);
   const leverandor = parsed.leverandor ?? 'ukjent';
   const pdfPath   = `${userId}/${dato}_${slugify(leverandor)}.pdf`;
-  const pdfBytes  = Buffer.from(pdfAttachment.Content, 'base64');
+  const pdfBytes  = Buffer.from(pdfAttachment.content, 'base64');
 
   const { error: uploadErr } = await supabase.storage
     .from('fakturaer-pdfs')
