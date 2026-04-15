@@ -32,17 +32,26 @@ const supabaseAdmin = () => {
 
 // ── Types ─────────────────────────────────────────────────────────────────────
 
-/** Resend inbound webhook payload */
-interface ResendPayload {
-  from:        string;
-  to:          string;
-  subject?:    string;
-  html?:       string;
-  text?:       string;
-  attachments: {
-    filename:    string;
-    content:     string;   // base64-encoded
-    contentType: string;
+/** Resend inbound webhook — top-level envelope */
+interface ResendWebhook {
+  type?:       string;   // e.g. "email.received"
+  created_at?: string;
+  data:        ResendEmailData;
+}
+
+/** Email data nested under webhook.data */
+interface ResendEmailData {
+  from?:        string;   // "Name <email>" or "email"
+  sender?:      string;   // alternative sender field
+  to?:          string | string[];
+  subject?:     string;
+  html?:        string;
+  text?:        string;
+  attachments?: {
+    filename:     string;
+    content:      string;   // base64-encoded
+    content_type: string;   // Resend uses snake_case
+    contentType?: string;   // fallback camelCase
   }[];
 }
 
@@ -112,16 +121,23 @@ Regler:
 
 export async function POST(req: Request) {
   // ── 1. Parse request body ──────────────────────────────────────────────────
-  let payload: ResendPayload;
+  let webhook: ResendWebhook;
   try {
-    payload = await req.json() as ResendPayload;
+    webhook = await req.json() as ResendWebhook;
   } catch {
     log('Failed to parse JSON body');
     return NextResponse.json({ error: 'Invalid JSON body' }, { status: 400 });
   }
 
-  const from = payload.from?.toLowerCase().trim();
-  log('Received email', { from, subject: payload.subject, attachments: payload.attachments?.length ?? 0 });
+  // Resend wraps all email fields under webhook.data
+  const email = webhook.data ?? (webhook as unknown as ResendEmailData);
+
+  // Sender may be "Name <email@example.com>" — extract the address part
+  const rawFrom  = email.from ?? email.sender ?? '';
+  const addrMatch = rawFrom.match(/<([^>]+)>/);
+  const from      = (addrMatch ? addrMatch[1] : rawFrom).toLowerCase().trim();
+
+  log('Received email', { from, subject: email.subject, attachments: email.attachments?.length ?? 0 });
 
   if (!from) {
     log('Missing sender address');
@@ -129,8 +145,9 @@ export async function POST(req: Request) {
   }
 
   // ── 2. Find PDF attachment ─────────────────────────────────────────────────
-  const pdfAttachment = payload.attachments?.find(
-    a => a.contentType === 'application/pdf' || a.filename?.toLowerCase().endsWith('.pdf')
+  const pdfAttachment = email.attachments?.find(
+    a => (a.content_type ?? a.contentType) === 'application/pdf'
+      || a.filename?.toLowerCase().endsWith('.pdf')
   );
 
   if (!pdfAttachment) {
