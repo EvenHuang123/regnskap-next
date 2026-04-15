@@ -1,7 +1,8 @@
 'use client';
 import { useState, useEffect, useRef, useCallback } from 'react';
 import dynamic from 'next/dynamic';
-const ProductTour = dynamic(() => import('./ProductTour'), { ssr: false });
+const ProductTour  = dynamic(() => import('./ProductTour'),  { ssr: false });
+const ExportModal  = dynamic(() => import('./ExportModal'),  { ssr: false });
 import type { User } from '@supabase/supabase-js';
 import { createClient } from '@/lib/supabase-browser';
 import {
@@ -2104,6 +2105,7 @@ export default function AppShell({ user, currentMonth, initialProfil, initialMaa
   const [profil,         setProfil]         = useState<Profil|null>(() => initialProfil ? mapDbProfil(initialProfil) : null);
   const [showOnboarding, setShowOnboarding] = useState(false);
   const [tourAutoStart,  setTourAutoStart]  = useState(false);
+  const [showExport,     setShowExport]     = useState(false);
 
   // Trigger auto-start once the component mounts (needs to run client-side)
   useEffect(() => { setTourAutoStart(true); }, []);
@@ -2219,8 +2221,15 @@ export default function AppShell({ user, currentMonth, initialProfil, initialMaa
             <div style={{ fontSize:9, color:C.grayD, letterSpacing:'0.14em', textTransform:'uppercase' }}>{btypeEntry ? `${btypeEntry.icon} ${profil.selskapsform||''}` : 'FinanceIQ'}</div>
           </div>
         </div>
-        <div className="header-month">
+        <div className="header-month" style={{ display:'flex', alignItems:'center', gap:10 }}>
           <MonthSelector month={month} onChange={setMonth} saved={saved}/>
+          <button onClick={() => setShowExport(true)}
+            title="Eksporter til regnskapsfører"
+            style={{ display:'inline-flex', alignItems:'center', gap:6, padding:'7px 13px', background:C.green, border:'none', borderRadius:7, color:'#000', fontSize:12, fontWeight:700, cursor:'pointer', transition:'background 0.15s', flexShrink:0, whiteSpace:'nowrap' }}
+            onMouseEnter={e => { (e.currentTarget as HTMLButtonElement).style.background = C.greenL; }}
+            onMouseLeave={e => { (e.currentTarget as HTMLButtonElement).style.background = C.green; }}>
+            📊 Eksporter
+          </button>
         </div>
         <div className="header-right" style={{ display:'flex', alignItems:'center', gap:16 }}>
           <div style={{ fontSize:11, color:C.grayD, textAlign:'right', lineHeight:1.6 }}>
@@ -2283,6 +2292,9 @@ export default function AppShell({ user, currentMonth, initialProfil, initialMaa
         </span>
         <span>{user.email} · NOK</span>
       </footer>
+
+      {/* Export modal */}
+      {showExport && <ExportModal currentMonth={month} onClose={() => setShowExport(false)} />}
 
       {/* Product Tour */}
       <ProductTour autoStart={tourAutoStart} />
