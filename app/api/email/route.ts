@@ -84,7 +84,7 @@ const slugify = (s: string) =>
 
 async function parsePdf(base64: string): Promise<ParsedInvoice> {
   const message = await anthropic.beta.messages.create({
-    model:      'claude-sonnet-4-20250514',
+    model:      'claude-sonnet-4-6',
     max_tokens: 1024,
     betas:      ['pdfs-2024-09-25'],
     messages: [
