@@ -2,17 +2,14 @@
  * Inbound email webhook — receives forwarded invoices via Resend inbound.
  *
  * Resend delivers inbound messages as POST JSON to this route.
+ * Attachments are NOT included inline — content must be fetched via
+ * GET https://api.resend.com/emails/{email_id}/attachments/{attachment_id}
  *
  * Required environment variables:
  *   ANTHROPIC_API_KEY          — already set
  *   NEXT_PUBLIC_SUPABASE_URL   — already set
  *   SUPABASE_SERVICE_ROLE_KEY  — add in Vercel dashboard (Settings → Environment Variables)
  *   RESEND_API_KEY             — add in Vercel dashboard (Settings → Environment Variables)
- *
- * Resend setup:
- *   1. Add your domain in Resend dashboard → Domains
- *   2. Create an Inbound route pointing to: https://<your-domain>/api/email
- *   3. Users register their sender address in the user_emails table
  */
 
 import Anthropic from '@anthropic-ai/sdk';
@@ -23,7 +20,7 @@ import { NextResponse } from 'next/server';
 export const maxDuration = 60;
 export const dynamic = 'force-dynamic';
 
-// Resend (and most webhook platforms) do a GET before POSTing to verify the endpoint.
+// Resend does a GET before POSTing to verify the endpoint.
 export function GET() {
   return NextResponse.json({ ok: true });
 }
@@ -43,25 +40,33 @@ const supabaseAdmin = () => {
 
 /** Resend inbound webhook — top-level envelope */
 interface ResendWebhook {
-  type?:       string;   // e.g. "email.received"
+  type?:       string;   // "email.received"
   created_at?: string;
   data:        ResendEmailData;
 }
 
 /** Email data nested under webhook.data */
 interface ResendEmailData {
-  from?:        string;   // "Name <email>" or "email"
-  sender?:      string;   // alternative sender field
+  email_id?:    string;
+  from?:        string;
+  sender?:      string;
   to?:          string | string[];
   subject?:     string;
-  html?:        string;
-  text?:        string;
-  attachments?: {
-    filename:     string;
-    content:      string;   // base64-encoded
-    content_type: string;   // Resend uses snake_case
-    contentType?: string;   // fallback camelCase
-  }[];
+  attachments?: ResendAttachment[];
+}
+
+/**
+ * Resend inbound attachment metadata.
+ * Content is NOT included inline — must be fetched separately.
+ */
+interface ResendAttachment {
+  id:                  string;   // attachment UUID — use to fetch content
+  filename:            string;
+  content_type:        string;
+  content_disposition: string;
+  content_id?:         string;
+  // Inline content (present if Resend ever sends it):
+  content?:            string;
 }
 
 interface ParsedInvoice {
@@ -79,6 +84,62 @@ const log = (step: string, data?: unknown) =>
 
 const slugify = (s: string) =>
   s.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-|-$/g, '');
+
+// ── Fetch attachment content from Resend API ──────────────────────────────────
+
+async function fetchAttachmentBase64(emailId: string, attachmentId: string): Promise<string> {
+  const apiKey = process.env.RESEND_API_KEY;
+  if (!apiKey) throw new Error('RESEND_API_KEY not configured');
+
+  // Try the attachment-specific endpoint first
+  const attUrl = `https://api.resend.com/emails/${emailId}/attachments/${attachmentId}`;
+  log('Fetching attachment from Resend', { url: attUrl });
+
+  const attRes = await fetch(attUrl, {
+    headers: { Authorization: `Bearer ${apiKey}` },
+  });
+
+  if (attRes.ok) {
+    const attJson = await attRes.json() as Record<string, unknown>;
+    log('Resend attachment response keys', Object.keys(attJson));
+
+    // The content may be base64 string or a Buffer-like object
+    const content = attJson.content ?? attJson.data ?? attJson.body;
+    if (typeof content === 'string' && content.length > 0) {
+      return content;
+    }
+  } else {
+    log('Attachment endpoint failed', { status: attRes.status, text: await attRes.text() });
+  }
+
+  // Fallback: fetch the full email and find the attachment there
+  const emailUrl = `https://api.resend.com/emails/${emailId}`;
+  log('Falling back to full email fetch', { url: emailUrl });
+
+  const emailRes = await fetch(emailUrl, {
+    headers: { Authorization: `Bearer ${apiKey}` },
+  });
+
+  if (!emailRes.ok) {
+    throw new Error(`Resend email fetch failed: ${emailRes.status} ${await emailRes.text()}`);
+  }
+
+  const fullEmail = await emailRes.json() as Record<string, unknown>;
+  log('Full email response keys', Object.keys(fullEmail));
+
+  // Find our attachment in the full email response
+  const attachments = fullEmail.attachments as Record<string, unknown>[] | undefined;
+  if (Array.isArray(attachments)) {
+    const match = attachments.find(a => a.id === attachmentId || a.filename !== undefined);
+    if (match) {
+      const content = match.content ?? match.data ?? match.body;
+      if (typeof content === 'string' && content.length > 0) return content;
+      log('Attachment found in full email but content missing', { keys: Object.keys(match) });
+    }
+  }
+
+  throw new Error(`Could not retrieve attachment content for id=${attachmentId}`);
+}
 
 // ── PDF parsing via Anthropic ─────────────────────────────────────────────────
 
@@ -131,8 +192,6 @@ export async function POST(req: Request) {
   try {
     return await handleWebhook(req);
   } catch (err) {
-    // Catch-all: never let an uncaught exception surface as 4xx/5xx to Resend,
-    // which would cause retries. Log it and return 200.
     console.error('[email-webhook] Unhandled exception', err);
     return NextResponse.json({ skipped: 'Internal error', detail: String(err) }, { status: 200 });
   }
@@ -140,7 +199,6 @@ export async function POST(req: Request) {
 
 async function handleWebhook(req: Request) {
   // ── 1. Parse request body ──────────────────────────────────────────────────
-  // Read as raw text first so we can log it before parsing.
   const rawText = await req.text();
   log('Raw body (first 2000 chars)', rawText.slice(0, 2000));
 
@@ -149,87 +207,72 @@ async function handleWebhook(req: Request) {
     webhook = JSON.parse(rawText) as ResendWebhook;
   } catch {
     log('Failed to parse JSON body');
-    // Return 200 so Resend does not retry — this is a permanent parse failure.
     return NextResponse.json({ skipped: 'Invalid JSON body' }, { status: 200 });
   }
 
-  // Resend wraps all email fields under webhook.data; fall back to root for
-  // flat payloads (e.g. local testing).
   const email: ResendEmailData = webhook.data ?? (webhook as unknown as ResendEmailData);
 
-  // Log the parsed structure so we can confirm field names in Vercel logs.
   log('Parsed email fields', {
-    keys:        Object.keys(email),
-    from:        email.from,
-    sender:      email.sender,
-    subject:     email.subject,
-    attachments: (email.attachments ?? []).map(a => {
-      // Log every key on the attachment and the first 80 chars of each value
-      const raw = a as Record<string, unknown>;
-      const allFields: Record<string, unknown> = {};
-      for (const k of Object.keys(raw)) {
-        const v = raw[k];
-        if (typeof v === 'string') {
-          allFields[k] = v.length > 80 ? `${v.slice(0, 80)}… [len=${v.length}]` : v;
-        } else {
-          allFields[k] = v;
-        }
-      }
-      return allFields;
-    }),
+    email_id: email.email_id,
+    from:     email.from,
+    subject:  email.subject,
+    attachments: (email.attachments ?? []).map(a => ({
+      id:           a.id,
+      filename:     a.filename,
+      content_type: a.content_type,
+      hasInline:    !!a.content,
+    })),
   });
 
-  // Sender may be "Name <email@example.com>" — extract just the address.
-  const rawFrom   = email.from ?? email.sender ?? '';
+  // ── 2. Extract sender address ──────────────────────────────────────────────
+  const rawFrom   = email.from ?? '';
   const addrMatch = rawFrom.match(/<([^>]+)>/);
   const from      = (addrMatch ? addrMatch[1] : rawFrom).toLowerCase().trim();
 
   if (!from) {
     log('Missing sender address — skipping');
-    // 200 so Resend marks delivery as done; check logs to fix payload mapping.
     return NextResponse.json({ skipped: 'Missing sender address' }, { status: 200 });
   }
 
-  // ── 2. Find PDF attachment ─────────────────────────────────────────────────
+  // ── 3. Find PDF attachment ─────────────────────────────────────────────────
   const pdfAttachment = (email.attachments ?? []).find(
-    a => (a.content_type ?? a.contentType ?? '').toLowerCase().includes('pdf')
+    a => a.content_type?.toLowerCase().includes('pdf')
       || a.filename?.toLowerCase().endsWith('.pdf')
   );
 
   if (!pdfAttachment) {
     log('No PDF attachment — skipping');
-    // 200: email without a PDF is valid, just not actionable.
     return NextResponse.json({ skipped: 'No PDF attachment' }, { status: 200 });
   }
 
-  // Resend may put the base64 content in a different field — check all candidates.
-  const raw = pdfAttachment as unknown as Record<string, unknown>;
-  const pdfContent: string =
-    (typeof raw.content      === 'string' && raw.content)      ? raw.content :
-    (typeof raw.data         === 'string' && raw.data)         ? raw.data :
-    (typeof raw.body         === 'string' && raw.body)         ? raw.body :
-    (typeof raw.raw          === 'string' && raw.raw)          ? raw.raw :
-    '';
+  log('Found PDF attachment', { filename: pdfAttachment.filename, id: pdfAttachment.id });
 
-  log('PDF attachment content probe', {
-    filename:       pdfAttachment.filename,
-    contentLen:     pdfContent.length,
-    fieldSources:   {
-      content:    typeof raw.content === 'string' ? raw.content.length : null,
-      data:       typeof raw.data    === 'string' ? (raw.data as string).length    : null,
-      body:       typeof raw.body    === 'string' ? (raw.body as string).length    : null,
-      raw:        typeof raw.raw     === 'string' ? (raw.raw  as string).length    : null,
-    },
-  });
+  // ── 4. Get attachment base64 content ──────────────────────────────────────
+  // Resend does not include content inline — fetch via API.
+  let pdfContent: string = pdfAttachment.content ?? '';
 
   if (!pdfContent) {
-    log('PDF attachment content is empty — all known fields checked, skipping');
-    return NextResponse.json({ skipped: 'PDF attachment has no content' }, { status: 200 });
+    const emailId = email.email_id;
+    if (!emailId) {
+      log('No email_id in payload — cannot fetch attachment content');
+      return NextResponse.json({ skipped: 'Missing email_id for attachment fetch' }, { status: 200 });
+    }
+    try {
+      pdfContent = await fetchAttachmentBase64(emailId, pdfAttachment.id);
+      log('Fetched attachment content', { len: pdfContent.length });
+    } catch (e) {
+      const msg = e instanceof Error ? e.message : String(e);
+      log('Failed to fetch attachment from Resend', msg);
+      return NextResponse.json({ error: `Attachment fetch failed: ${msg}` }, { status: 500 });
+    }
   }
 
-  log('Found PDF attachment', { filename: pdfAttachment.filename });
+  if (!pdfContent) {
+    log('PDF content still empty after fetch attempt');
+    return NextResponse.json({ skipped: 'PDF content empty' }, { status: 200 });
+  }
 
-  // ── 3. Look up user by sender email ───────────────────────────────────────
+  // ── 5. Look up user by sender email ───────────────────────────────────────
   let supabase: ReturnType<typeof supabaseAdmin>;
   try {
     supabase = supabaseAdmin();
@@ -247,14 +290,13 @@ async function handleWebhook(req: Request) {
 
   if (emailErr || !emailRow) {
     log('Unknown sender — skipping', { from, error: emailErr?.message });
-    // 200: unknown sender is not a server error; just not registered yet.
     return NextResponse.json({ skipped: `Sender ${from} not in user_emails` }, { status: 200 });
   }
 
   const userId: string = emailRow.user_id;
   log('Identified user', { userId });
 
-  // ── 4. Parse PDF with Anthropic ────────────────────────────────────────────
+  // ── 6. Parse PDF with Anthropic ────────────────────────────────────────────
   let parsed: ParsedInvoice;
   try {
     parsed = await parsePdf(pdfContent);
@@ -265,11 +307,11 @@ async function handleWebhook(req: Request) {
     return NextResponse.json({ error: `PDF parsing failed: ${msg}` }, { status: 500 });
   }
 
-  // ── 5. Upload PDF to Supabase Storage ─────────────────────────────────────
-  const dato      = parsed.dato ?? new Date().toISOString().slice(0, 10);
+  // ── 7. Upload PDF to Supabase Storage ─────────────────────────────────────
+  const dato       = parsed.dato ?? new Date().toISOString().slice(0, 10);
   const leverandor = parsed.leverandor ?? 'ukjent';
-  const pdfPath   = `${userId}/${dato}_${slugify(leverandor)}.pdf`;
-  const pdfBytes  = Buffer.from(pdfContent, 'base64');
+  const pdfPath    = `${userId}/${dato}_${slugify(leverandor)}.pdf`;
+  const pdfBytes   = Buffer.from(pdfContent, 'base64');
 
   const { error: uploadErr } = await supabase.storage
     .from('fakturaer-pdfs')
@@ -281,7 +323,7 @@ async function handleWebhook(req: Request) {
   }
   log('PDF uploaded', { path: pdfPath });
 
-  // ── 6. Insert into fakturaer table ─────────────────────────────────────────
+  // ── 8. Insert into fakturaer table ─────────────────────────────────────────
   const { data: inserted, error: insertErr } = await supabase
     .from('fakturaer')
     .insert({
