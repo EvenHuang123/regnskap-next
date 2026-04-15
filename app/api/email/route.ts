@@ -19,6 +19,15 @@ import Anthropic from '@anthropic-ai/sdk';
 import { createClient } from '@supabase/supabase-js';
 import { NextResponse } from 'next/server';
 
+// Allow up to 60 seconds — Claude PDF parsing can be slow.
+export const maxDuration = 60;
+export const dynamic = 'force-dynamic';
+
+// Resend (and most webhook platforms) do a GET before POSTing to verify the endpoint.
+export function GET() {
+  return NextResponse.json({ ok: true });
+}
+
 // ── Clients ───────────────────────────────────────────────────────────────────
 
 const anthropic = new Anthropic({ apiKey: process.env.ANTHROPIC_API_KEY });
@@ -120,8 +129,19 @@ Regler:
 // ── Webhook handler ───────────────────────────────────────────────────────────
 
 export async function POST(req: Request) {
+  try {
+    return await handleWebhook(req);
+  } catch (err) {
+    // Catch-all: never let an uncaught exception surface as 4xx/5xx to Resend,
+    // which would cause retries. Log it and return 200.
+    console.error('[email-webhook] Unhandled exception', err);
+    return NextResponse.json({ skipped: 'Internal error', detail: String(err) }, { status: 200 });
+  }
+}
+
+async function handleWebhook(req: Request) {
   // ── 1. Parse request body ──────────────────────────────────────────────────
-  // Clone so we can read the raw text for debugging AND parse as JSON.
+  // Read as raw text first so we can log it before parsing.
   const rawText = await req.text();
   log('Raw body (first 2000 chars)', rawText.slice(0, 2000));
 

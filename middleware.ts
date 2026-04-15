@@ -29,7 +29,7 @@ export async function middleware(request: NextRequest) {
 
   const { data: { user } } = await supabase.auth.getUser();
   const { pathname } = request.nextUrl;
-
+    
   // Always-public paths: serve as-is for everyone
   if (PUBLIC_PATHS.includes(pathname)) {
     return supabaseResponse;
