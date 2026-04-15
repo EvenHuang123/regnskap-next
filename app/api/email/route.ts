@@ -88,6 +88,13 @@ const slugify = (s: string) =>
 // ── Fetch attachment content from Resend API ──────────────────────────────────
 
 async function fetchAttachmentBase64(emailId: string, attachmentId: string): Promise<string> {
+  // Debug: log which env vars are present (never log values)
+  log('Env check', {
+    hasResendKey:   !!process.env.RESEND_API_KEY,
+    resendKeyLen:   process.env.RESEND_API_KEY?.length ?? 0,
+    nodeEnv:        process.env.NODE_ENV,
+  });
+
   const apiKey = process.env.RESEND_API_KEY;
   if (!apiKey) throw new Error('RESEND_API_KEY not configured');
 
