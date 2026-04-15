@@ -163,12 +163,20 @@ async function handleWebhook(req: Request) {
     from:        email.from,
     sender:      email.sender,
     subject:     email.subject,
-    attachments: (email.attachments ?? []).map(a => ({
-      filename:     a.filename,
-      content_type: a.content_type,
-      contentType:  a.contentType,
-      hasContent:   !!a.content,
-    })),
+    attachments: (email.attachments ?? []).map(a => {
+      // Log every key on the attachment and the first 80 chars of each value
+      const raw = a as Record<string, unknown>;
+      const allFields: Record<string, unknown> = {};
+      for (const k of Object.keys(raw)) {
+        const v = raw[k];
+        if (typeof v === 'string') {
+          allFields[k] = v.length > 80 ? `${v.slice(0, 80)}… [len=${v.length}]` : v;
+        } else {
+          allFields[k] = v;
+        }
+      }
+      return allFields;
+    }),
   });
 
   // Sender may be "Name <email@example.com>" — extract just the address.
@@ -193,6 +201,32 @@ async function handleWebhook(req: Request) {
     // 200: email without a PDF is valid, just not actionable.
     return NextResponse.json({ skipped: 'No PDF attachment' }, { status: 200 });
   }
+
+  // Resend may put the base64 content in a different field — check all candidates.
+  const raw = pdfAttachment as unknown as Record<string, unknown>;
+  const pdfContent: string =
+    (typeof raw.content      === 'string' && raw.content)      ? raw.content :
+    (typeof raw.data         === 'string' && raw.data)         ? raw.data :
+    (typeof raw.body         === 'string' && raw.body)         ? raw.body :
+    (typeof raw.raw          === 'string' && raw.raw)          ? raw.raw :
+    '';
+
+  log('PDF attachment content probe', {
+    filename:       pdfAttachment.filename,
+    contentLen:     pdfContent.length,
+    fieldSources:   {
+      content:    typeof raw.content === 'string' ? raw.content.length : null,
+      data:       typeof raw.data    === 'string' ? (raw.data as string).length    : null,
+      body:       typeof raw.body    === 'string' ? (raw.body as string).length    : null,
+      raw:        typeof raw.raw     === 'string' ? (raw.raw  as string).length    : null,
+    },
+  });
+
+  if (!pdfContent) {
+    log('PDF attachment content is empty — all known fields checked, skipping');
+    return NextResponse.json({ skipped: 'PDF attachment has no content' }, { status: 200 });
+  }
+
   log('Found PDF attachment', { filename: pdfAttachment.filename });
 
   // ── 3. Look up user by sender email ───────────────────────────────────────
@@ -223,7 +257,7 @@ async function handleWebhook(req: Request) {
   // ── 4. Parse PDF with Anthropic ────────────────────────────────────────────
   let parsed: ParsedInvoice;
   try {
-    parsed = await parsePdf(pdfAttachment.content);
+    parsed = await parsePdf(pdfContent);
     log('Parsed invoice', parsed);
   } catch (e) {
     const msg = e instanceof Error ? e.message : 'Unknown error';
@@ -235,7 +269,7 @@ async function handleWebhook(req: Request) {
   const dato      = parsed.dato ?? new Date().toISOString().slice(0, 10);
   const leverandor = parsed.leverandor ?? 'ukjent';
   const pdfPath   = `${userId}/${dato}_${slugify(leverandor)}.pdf`;
-  const pdfBytes  = Buffer.from(pdfAttachment.content, 'base64');
+  const pdfBytes  = Buffer.from(pdfContent, 'base64');
 
   const { error: uploadErr } = await supabase.storage
     .from('fakturaer-pdfs')
