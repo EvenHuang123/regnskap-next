@@ -2294,7 +2294,7 @@ export default function AppShell({ user, currentMonth, initialProfil, initialMaa
       </footer>
 
       {/* Export modal */}
-      {showExport && <ExportModal currentMonth={month} onClose={() => setShowExport(false)} />}
+      {showExport && <ExportModal currentMonth={month} bedriftsnavn={profil?.bedriftsnavn || 'Bedrift'} onClose={() => setShowExport(false)} />}
 
       {/* Product Tour */}
       <ProductTour autoStart={tourAutoStart} />

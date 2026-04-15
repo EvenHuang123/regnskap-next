@@ -4,6 +4,7 @@ import { C, MONTHS_NO } from '@/lib/constants';
 
 interface ExportModalProps {
   currentMonth: string;   // YYYY-MM
+  bedriftsnavn: string;
   onClose: () => void;
 }
 
@@ -28,7 +29,7 @@ function recentMonths(): string[] {
   return months;
 }
 
-export default function ExportModal({ currentMonth, onClose }: ExportModalProps) {
+export default function ExportModal({ currentMonth, bedriftsnavn, onClose }: ExportModalProps) {
   const [step,        setStep]        = useState<Step>('options');
   const [periodMode,  setPeriodMode]  = useState<PeriodMode>('month');
   const [selMonth,    setSelMonth]    = useState(currentMonth);
@@ -59,6 +60,7 @@ export default function ExportModal({ currentMonth, onClose }: ExportModalProps)
           period,
           ...(periodMode === 'custom' ? { from: customFrom, to: customTo } : {}),
           format,
+          bedriftsnavn,
           options: {
             filterBetalt,
             filterUbetalt,
