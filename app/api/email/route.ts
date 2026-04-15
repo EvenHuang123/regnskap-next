@@ -121,38 +121,58 @@ Regler:
 
 export async function POST(req: Request) {
   // ── 1. Parse request body ──────────────────────────────────────────────────
+  // Clone so we can read the raw text for debugging AND parse as JSON.
+  const rawText = await req.text();
+  log('Raw body (first 2000 chars)', rawText.slice(0, 2000));
+
   let webhook: ResendWebhook;
   try {
-    webhook = await req.json() as ResendWebhook;
+    webhook = JSON.parse(rawText) as ResendWebhook;
   } catch {
     log('Failed to parse JSON body');
-    return NextResponse.json({ error: 'Invalid JSON body' }, { status: 400 });
+    // Return 200 so Resend does not retry — this is a permanent parse failure.
+    return NextResponse.json({ skipped: 'Invalid JSON body' }, { status: 200 });
   }
 
-  // Resend wraps all email fields under webhook.data
-  const email = webhook.data ?? (webhook as unknown as ResendEmailData);
+  // Resend wraps all email fields under webhook.data; fall back to root for
+  // flat payloads (e.g. local testing).
+  const email: ResendEmailData = webhook.data ?? (webhook as unknown as ResendEmailData);
 
-  // Sender may be "Name <email@example.com>" — extract the address part
-  const rawFrom  = email.from ?? email.sender ?? '';
+  // Log the parsed structure so we can confirm field names in Vercel logs.
+  log('Parsed email fields', {
+    keys:        Object.keys(email),
+    from:        email.from,
+    sender:      email.sender,
+    subject:     email.subject,
+    attachments: (email.attachments ?? []).map(a => ({
+      filename:     a.filename,
+      content_type: a.content_type,
+      contentType:  a.contentType,
+      hasContent:   !!a.content,
+    })),
+  });
+
+  // Sender may be "Name <email@example.com>" — extract just the address.
+  const rawFrom   = email.from ?? email.sender ?? '';
   const addrMatch = rawFrom.match(/<([^>]+)>/);
   const from      = (addrMatch ? addrMatch[1] : rawFrom).toLowerCase().trim();
 
-  log('Received email', { from, subject: email.subject, attachments: email.attachments?.length ?? 0 });
-
   if (!from) {
-    log('Missing sender address');
-    return NextResponse.json({ error: 'Missing sender address' }, { status: 400 });
+    log('Missing sender address — skipping');
+    // 200 so Resend marks delivery as done; check logs to fix payload mapping.
+    return NextResponse.json({ skipped: 'Missing sender address' }, { status: 200 });
   }
 
   // ── 2. Find PDF attachment ─────────────────────────────────────────────────
-  const pdfAttachment = email.attachments?.find(
-    a => (a.content_type ?? a.contentType) === 'application/pdf'
+  const pdfAttachment = (email.attachments ?? []).find(
+    a => (a.content_type ?? a.contentType ?? '').toLowerCase().includes('pdf')
       || a.filename?.toLowerCase().endsWith('.pdf')
   );
 
   if (!pdfAttachment) {
-    log('No PDF attachment found');
-    return NextResponse.json({ error: 'No PDF attachment found in email' }, { status: 400 });
+    log('No PDF attachment — skipping');
+    // 200: email without a PDF is valid, just not actionable.
+    return NextResponse.json({ skipped: 'No PDF attachment' }, { status: 200 });
   }
   log('Found PDF attachment', { filename: pdfAttachment.filename });
 
@@ -173,11 +193,9 @@ export async function POST(req: Request) {
     .single();
 
   if (emailErr || !emailRow) {
-    log('Unknown sender', { from, error: emailErr?.message });
-    return NextResponse.json(
-      { error: `Sender ${from} not registered in user_emails table` },
-      { status: 404 }
-    );
+    log('Unknown sender — skipping', { from, error: emailErr?.message });
+    // 200: unknown sender is not a server error; just not registered yet.
+    return NextResponse.json({ skipped: `Sender ${from} not in user_emails` }, { status: 200 });
   }
 
   const userId: string = emailRow.user_id;
