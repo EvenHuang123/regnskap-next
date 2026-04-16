@@ -115,7 +115,7 @@ export async function POST(req: Request) {
   const periodLabel = period === 'custom' ? `${from} – ${to}` : period;
 
   if (format === 'xlsx') {
-    const buffer = generateXLSX(
+    const buffer = await generateXLSX(
       fakturaer, prevFakturaer, options, periodLabel,
       bedriftsnavn || 'Bedrift',
     );

@@ -1,8 +1,7 @@
 // ─── Professional Excel / CSV generation ─────────────────────────────────────
-// Runs server-side only. Uses the 'xlsx' package (SheetJS CE).
-// Cells are styled via the `s` property; write with { cellStyles: true }.
+// Runs server-side only. Uses ExcelJS for full styling support.
 
-import * as XLSX from 'xlsx';
+import ExcelJS from 'exceljs';
 import {
   type ExportFaktura,
   fmtDateNO,
@@ -21,247 +20,198 @@ export interface ExportOptions {
   filterUbetalt:      boolean;
 }
 
-// ── Style primitives ──────────────────────────────────────────────────────────
+// ── Colour palette ────────────────────────────────────────────────────────────
 
-const thinB = {
-  top:    { style: 'thin' as const, color: { rgb: 'C8C8C8' } },
-  bottom: { style: 'thin' as const, color: { rgb: 'C8C8C8' } },
-  left:   { style: 'thin' as const, color: { rgb: 'C8C8C8' } },
-  right:  { style: 'thin' as const, color: { rgb: 'C8C8C8' } },
+const C = {
+  headerDark:  'FF1F3864',   // #1f3864 — dark navy header
+  headerMid:   'FF2E4A7A',   // slightly lighter navy for section heads
+  subHeader:   'FFD9D9D9',   // #d9d9d9 — light grey sub-header
+  white:       'FFFFFFFF',
+  black:       'FF000000',
+  darkText:    'FF1F2937',
+  grayText:    'FF6B7280',
+  altRow:      'FFF5F7FA',   // very light blue-grey zebra row
+  totalRow:    'FF1F3864',   // same as header for totals
+  green:       'FF90EE90',   // #90EE90 — paid status
+  greenText:   'FF166534',
+  yellow:      'FFFFD700',   // #FFD700 — unpaid status
+  yellowText:  'FF92400E',
+  red:         'FFFEE2E2',
+  redText:     'FF991B1B',
+  changePos:   'FF166534',
+  changeNeg:   'FF991B1B',
+  border:      'FFB0B8C4',
+  borderDark:  'FF6B7280',
+} as const;
+
+// ── Style helpers ─────────────────────────────────────────────────────────────
+
+type Alignment = Partial<ExcelJS.Alignment>;
+type Border    = Partial<ExcelJS.Borders>;
+
+const thinBorder: Border = {
+  top:    { style: 'thin',   color: { argb: C.border } },
+  bottom: { style: 'thin',   color: { argb: C.border } },
+  left:   { style: 'thin',   color: { argb: C.border } },
+  right:  { style: 'thin',   color: { argb: C.border } },
 };
 
-const medB = {
-  top:    { style: 'medium' as const, color: { rgb: '888888' } },
-  bottom: { style: 'medium' as const, color: { rgb: '888888' } },
-  left:   { style: 'medium' as const, color: { rgb: '888888' } },
-  right:  { style: 'medium' as const, color: { rgb: '888888' } },
+const medBorder: Border = {
+  top:    { style: 'medium', color: { argb: C.borderDark } },
+  bottom: { style: 'medium', color: { argb: C.borderDark } },
+  left:   { style: 'medium', color: { argb: C.borderDark } },
+  right:  { style: 'medium', color: { argb: C.borderDark } },
 };
 
-// Pre-built style objects
-const S = {
-  titleDark: {
-    font:  { bold: true, sz: 13, color: { rgb: 'FFFFFF' } },
-    fill:  { patternType: 'solid' as const, fgColor: { rgb: '2C3E50' } },
-    alignment: { horizontal: 'left' as const, vertical: 'center' as const },
-  },
-  sectionHead: {
-    font:  { bold: true, sz: 11, color: { rgb: 'FFFFFF' } },
-    fill:  { patternType: 'solid' as const, fgColor: { rgb: '34495E' } },
-    alignment: { horizontal: 'left' as const, vertical: 'center' as const },
-    border: medB,
-  },
-  colHeadL: {
-    font:  { bold: true, sz: 10, color: { rgb: 'FFFFFF' } },
-    fill:  { patternType: 'solid' as const, fgColor: { rgb: '5D6D7E' } },
-    alignment: { horizontal: 'left' as const, vertical: 'center' as const },
-    border: thinB,
-  },
-  colHeadC: {
-    font:  { bold: true, sz: 10, color: { rgb: 'FFFFFF' } },
-    fill:  { patternType: 'solid' as const, fgColor: { rgb: '5D6D7E' } },
-    alignment: { horizontal: 'center' as const, vertical: 'center' as const },
-    border: thinB,
-  },
-  colHeadR: {
-    font:  { bold: true, sz: 10, color: { rgb: 'FFFFFF' } },
-    fill:  { patternType: 'solid' as const, fgColor: { rgb: '5D6D7E' } },
-    alignment: { horizontal: 'right' as const, vertical: 'center' as const },
-    border: thinB,
-  },
-  metaLabel: {
-    font:  { sz: 11, color: { rgb: '7F8C8D' } },
-    alignment: { horizontal: 'left' as const },
-  },
-  metaVal: {
-    font:  { bold: true, sz: 11, color: { rgb: '2C3E50' } },
-    alignment: { horizontal: 'left' as const },
-  },
-  dataL: {
-    font:  { sz: 10, color: { rgb: '2C3E50' } },
-    alignment: { horizontal: 'left' as const },
-    border: thinB,
-  },
-  dataR: {
-    font:  { sz: 10, color: { rgb: '2C3E50' } },
-    alignment: { horizontal: 'right' as const },
-    border: thinB,
-    numFmt: '#,##0.00',
-  },
-  dataC: {
-    font:  { sz: 10, color: { rgb: '2C3E50' } },
-    alignment: { horizontal: 'center' as const },
-    border: thinB,
-  },
-  dataAltL: {
-    font:  { sz: 10, color: { rgb: '2C3E50' } },
-    fill:  { patternType: 'solid' as const, fgColor: { rgb: 'F8F9FA' } },
-    alignment: { horizontal: 'left' as const },
-    border: thinB,
-  },
-  dataAltR: {
-    font:  { sz: 10, color: { rgb: '2C3E50' } },
-    fill:  { patternType: 'solid' as const, fgColor: { rgb: 'F8F9FA' } },
-    alignment: { horizontal: 'right' as const },
-    border: thinB,
-    numFmt: '#,##0.00',
-  },
-  dataAltC: {
-    font:  { sz: 10, color: { rgb: '2C3E50' } },
-    fill:  { patternType: 'solid' as const, fgColor: { rgb: 'F8F9FA' } },
-    alignment: { horizontal: 'center' as const },
-    border: thinB,
-  },
-  subTotalL: {
-    font:  { bold: true, sz: 10, color: { rgb: '2C3E50' } },
-    fill:  { patternType: 'solid' as const, fgColor: { rgb: 'ECF0F1' } },
-    alignment: { horizontal: 'left' as const },
-    border: medB,
-  },
-  subTotalR: {
-    font:  { bold: true, sz: 10, color: { rgb: '2C3E50' } },
-    fill:  { patternType: 'solid' as const, fgColor: { rgb: 'ECF0F1' } },
-    alignment: { horizontal: 'right' as const },
-    border: medB,
-    numFmt: '#,##0.00',
-  },
-  subTotalC: {
-    font:  { bold: true, sz: 10, color: { rgb: '2C3E50' } },
-    fill:  { patternType: 'solid' as const, fgColor: { rgb: 'ECF0F1' } },
-    alignment: { horizontal: 'center' as const },
-    border: medB,
-  },
-  totalL: {
-    font:  { bold: true, sz: 10, color: { rgb: 'FFFFFF' } },
-    fill:  { patternType: 'solid' as const, fgColor: { rgb: '2C3E50' } },
-    alignment: { horizontal: 'left' as const },
-    border: medB,
-  },
-  totalR: {
-    font:  { bold: true, sz: 10, color: { rgb: 'FFFFFF' } },
-    fill:  { patternType: 'solid' as const, fgColor: { rgb: '2C3E50' } },
-    alignment: { horizontal: 'right' as const },
-    border: medB,
-    numFmt: '#,##0.00',
-  },
-  totalC: {
-    font:  { bold: true, sz: 10, color: { rgb: 'FFFFFF' } },
-    fill:  { patternType: 'solid' as const, fgColor: { rgb: '2C3E50' } },
-    alignment: { horizontal: 'center' as const },
-    border: medB,
-  },
-  changePos: {
-    font:  { bold: true, sz: 10, color: { rgb: '27AE60' } },
-    alignment: { horizontal: 'right' as const },
-    border: thinB,
-    numFmt: '+#,##0.00;-#,##0.00',
-  },
-  changeNeg: {
-    font:  { bold: true, sz: 10, color: { rgb: 'E74C3C' } },
-    alignment: { horizontal: 'right' as const },
-    border: thinB,
-    numFmt: '+#,##0.00;-#,##0.00',
-  },
-  pctData: {
-    font:  { sz: 10, color: { rgb: '2C3E50' } },
-    alignment: { horizontal: 'center' as const },
-    border: thinB,
-    numFmt: '0.0%',
-  },
-  pctAlt: {
-    font:  { sz: 10, color: { rgb: '2C3E50' } },
-    fill:  { patternType: 'solid' as const, fgColor: { rgb: 'F8F9FA' } },
-    alignment: { horizontal: 'center' as const },
-    border: thinB,
-    numFmt: '0.0%',
-  },
-  pctTotal: {
-    font:  { bold: true, sz: 10, color: { rgb: 'FFFFFF' } },
-    fill:  { patternType: 'solid' as const, fgColor: { rgb: '2C3E50' } },
-    alignment: { horizontal: 'center' as const },
-    border: medB,
-    numFmt: '0.0%',
-  },
-  empty: {} as Record<string, unknown>,
-  greenBadge: {
-    font:  { bold: true, sz: 10, color: { rgb: '27AE60' } },
-    alignment: { horizontal: 'left' as const },
-    border: thinB,
-  },
-  balanceOk: {
-    font:  { bold: true, sz: 10, color: { rgb: '27AE60' } },
-    fill:  { patternType: 'solid' as const, fgColor: { rgb: 'EAFAF1' } },
-    alignment: { horizontal: 'center' as const },
-    border: medB,
-  },
-};
-
-// ── Cell builder ──────────────────────────────────────────────────────────────
-
-type StyleKey = keyof typeof S;
-
-function cell(
-  value: string | number | null | undefined,
-  styleKey: StyleKey,
-): XLSX.CellObject {
-  const s = S[styleKey];
-  if (value === null || value === undefined || value === '') {
-    return { v: '', t: 's', s };
-  }
-  if (typeof value === 'number') {
-    return { v: value, t: 'n', s };
-  }
-  return { v: String(value), t: 's', s };
+function solidFill(argb: string): ExcelJS.Fill {
+  return { type: 'pattern', pattern: 'solid', fgColor: { argb } };
 }
 
-// ── Sheet builder helpers ─────────────────────────────────────────────────────
-
-class SheetBuilder {
-  private ws: XLSX.WorkSheet = {};
-  private row = 0;
-  private maxCol = 0;
-
-  write(r: number, c: number, cl: XLSX.CellObject) {
-    this.ws[XLSX.utils.encode_cell({ r, c })] = cl;
-    if (c > this.maxCol) this.maxCol = c;
-    if (r > this.row)    this.row    = r;
+function applyStyle(
+  cell:       ExcelJS.Cell,
+  opts: {
+    bold?:       boolean;
+    italic?:     boolean;
+    sz?:         number;
+    color?:      string;
+    bg?:         string;
+    align?:      ExcelJS.Alignment['horizontal'];
+    valign?:     ExcelJS.Alignment['vertical'];
+    border?:     Border;
+    numFmt?:     string;
+    wrapText?:   boolean;
   }
+) {
+  cell.font = {
+    name:  'Calibri',
+    size:  opts.sz    ?? 11,
+    bold:  opts.bold  ?? false,
+    italic: opts.italic ?? false,
+    color: { argb: opts.color ?? C.darkText },
+  };
+  if (opts.bg) cell.fill = solidFill(opts.bg);
+  cell.alignment = {
+    horizontal: opts.align  ?? 'left',
+    vertical:   opts.valign ?? 'middle',
+    wrapText:   opts.wrapText ?? false,
+  };
+  if (opts.border) cell.border = opts.border;
+  if (opts.numFmt) cell.numFmt = opts.numFmt;
+}
 
-  addRow(cells: XLSX.CellObject[]) {
-    cells.forEach((cl, c) => this.write(this.row, c, cl));
-    const r = this.row;
-    this.row++;
-    return r;
-  }
+// Row height helper
+function rowH(ws: ExcelJS.Worksheet, rowNum: number, hpt: number) {
+  ws.getRow(rowNum).height = hpt;
+}
 
-  addBlank() {
-    this.row++;
-    return this.row - 1;
-  }
+// Merge cells by 1-based row/col
+function merge(ws: ExcelJS.Worksheet, r: number, c1: number, c2: number) {
+  ws.mergeCells(r, c1, r, c2);
+}
 
-  mergeCols(r: number, c0: number, c1: number) {
-    if (!this.ws['!merges']) this.ws['!merges'] = [];
-    this.ws['!merges'].push({ s: { r, c: c0 }, e: { r, c: c1 } });
-  }
+// ── Shared row builders ───────────────────────────────────────────────────────
 
-  setCols(cols: { wch: number }[]) {
-    this.ws['!cols'] = cols;
-  }
+/** Dark navy title spanning all columns */
+function addTitle(ws: ExcelJS.Worksheet, text: string, ncols: number): number {
+  const row  = ws.addRow([text]);
+  const rnum = row.number;
+  merge(ws, rnum, 1, ncols);
+  applyStyle(ws.getCell(rnum, 1), {
+    bold: true, sz: 13, color: C.white, bg: C.headerDark,
+    align: 'left', valign: 'middle', border: medBorder,
+  });
+  rowH(ws, rnum, 30);
+  return rnum;
+}
 
-  setRowHeight(r: number, hpx: number) {
-    if (!this.ws['!rows']) this.ws['!rows'] = [];
-    this.ws['!rows'][r] = { hpx };
-  }
+/** Section header spanning all columns */
+function addSectionHead(ws: ExcelJS.Worksheet, text: string, ncols: number): number {
+  const row  = ws.addRow([text]);
+  const rnum = row.number;
+  merge(ws, rnum, 1, ncols);
+  applyStyle(ws.getCell(rnum, 1), {
+    bold: true, sz: 11, color: C.white, bg: C.headerMid,
+    align: 'left', valign: 'middle', border: medBorder,
+  });
+  rowH(ws, rnum, 22);
+  return rnum;
+}
 
-  build(): XLSX.WorkSheet {
-    this.ws['!ref'] = XLSX.utils.encode_range({
-      s: { r: 0, c: 0 },
-      e: { r: this.row, c: this.maxCol },
+/** Column header row */
+function addColHeaders(
+  ws:      ExcelJS.Worksheet,
+  headers: { label: string; align?: ExcelJS.Alignment['horizontal'] }[],
+): number {
+  const values = headers.map(h => h.label);
+  const row    = ws.addRow(values);
+  const rnum   = row.number;
+  headers.forEach((h, i) => {
+    applyStyle(ws.getCell(rnum, i + 1), {
+      bold: true, sz: 11, color: C.white, bg: C.headerDark,
+      align: h.align ?? 'left', valign: 'middle', border: medBorder,
     });
-    return this.ws;
-  }
+  });
+  rowH(ws, rnum, 22);
+  return rnum;
 }
 
-// ── Period formatting ─────────────────────────────────────────────────────────
+/** Data row with zebra striping */
+function addDataRow(
+  ws:     ExcelJS.Worksheet,
+  cells:  { value: ExcelJS.CellValue; align?: ExcelJS.Alignment['horizontal']; numFmt?: string; bg?: string; color?: string; bold?: boolean }[],
+  isAlt:  boolean,
+): number {
+  const values = cells.map(c => c.value);
+  const row    = ws.addRow(values);
+  const rnum   = row.number;
+  const defBg  = isAlt ? C.altRow : undefined;
+  cells.forEach((c, i) => {
+    applyStyle(ws.getCell(rnum, i + 1), {
+      sz:     11,
+      color:  c.color ?? C.darkText,
+      bg:     c.bg ?? defBg,
+      align:  c.align ?? 'left',
+      valign: 'middle',
+      border: thinBorder,
+      numFmt: c.numFmt,
+      bold:   c.bold ?? false,
+    });
+  });
+  rowH(ws, rnum, 18);
+  return rnum;
+}
+
+/** Total / summary row */
+function addTotalRow(
+  ws:    ExcelJS.Worksheet,
+  cells: { value: ExcelJS.CellValue; align?: ExcelJS.Alignment['horizontal']; numFmt?: string }[],
+): number {
+  const values = cells.map(c => c.value);
+  const row    = ws.addRow(values);
+  const rnum   = row.number;
+  cells.forEach((c, i) => {
+    applyStyle(ws.getCell(rnum, i + 1), {
+      bold: true, sz: 11, color: C.white, bg: C.totalRow,
+      align: c.align ?? 'left', valign: 'middle',
+      border: medBorder, numFmt: c.numFmt,
+    });
+  });
+  rowH(ws, rnum, 20);
+  return rnum;
+}
+
+/** Blank spacer row */
+function addBlank(ws: ExcelJS.Worksheet) {
+  ws.addRow([]);
+}
+
+// ── Number formats ────────────────────────────────────────────────────────────
+
+const FMT_NOK = '"kr "#,##0.00';
+const FMT_PCT = '0.0%';
+const FMT_INT = '#,##0';
+
+// ── Period helpers ────────────────────────────────────────────────────────────
 
 const MONTHS_NO = ['Januar','Februar','Mars','April','Mai','Juni',
                    'Juli','August','September','Oktober','November','Desember'];
@@ -300,46 +250,49 @@ const ACCOUNT_NAMES: Record<string, string> = {
 // ── SHEET 1: SAMMENDRAG ───────────────────────────────────────────────────────
 
 function buildSummarySheet(
+  wb:            ExcelJS.Workbook,
   fakturaer:     ExportFaktura[],
   prevFakturaer: ExportFaktura[],
   period:        string,
   bedriftsnavn:  string,
-): XLSX.WorkSheet {
-  const sb   = new SheetBuilder();
+) {
+  const ws   = wb.addWorksheet('Sammendrag');
   const curr = computeSummary(fakturaer);
   const prev = computeSummary(prevFakturaer);
   const ts   = new Date().toLocaleString('nb-NO');
-  const NC   = 4; // number of columns
+  const NC   = 4;
 
-  // ── Title row ──────────────────────────────────────────────────────────────
-  const r0 = sb.addRow([
-    cell(`FAKTURASAMMENDRAG — ${bedriftsnavn.toUpperCase()}`, 'titleDark'),
-    cell('', 'titleDark'), cell('', 'titleDark'), cell('', 'titleDark'),
-  ]);
-  sb.mergeCols(r0, 0, NC - 1);
-  sb.setRowHeight(r0, 28);
+  ws.columns = [
+    { width: 36 }, { width: 18 }, { width: 18 }, { width: 18 },
+  ];
 
-  sb.addBlank();
+  // Title
+  addTitle(ws, `FAKTURASAMMENDRAG — ${bedriftsnavn.toUpperCase()}`, NC);
+  addBlank(ws);
 
-  // ── Metadata ───────────────────────────────────────────────────────────────
-  sb.addRow([cell('Bedrift:',   'metaLabel'), cell(bedriftsnavn,          'metaVal'), cell('', 'empty'), cell('', 'empty')]);
-  sb.addRow([cell('Periode:',   'metaLabel'), cell(fmtPeriodLabel(period),'metaVal'), cell('', 'empty'), cell('', 'empty')]);
-  sb.addRow([cell('Generert:',  'metaLabel'), cell(ts,                    'metaVal'), cell('', 'empty'), cell('', 'empty')]);
+  // Metadata
+  const metaRows: [string, string][] = [
+    ['Bedrift:',   bedriftsnavn],
+    ['Periode:',   fmtPeriodLabel(period)],
+    ['Generert:',  ts],
+  ];
+  metaRows.forEach(([label, val]) => {
+    const row  = ws.addRow([label, val]);
+    const rnum = row.number;
+    applyStyle(ws.getCell(rnum, 1), { sz: 11, color: C.grayText });
+    applyStyle(ws.getCell(rnum, 2), { sz: 11, bold: true, color: C.darkText });
+    rowH(ws, rnum, 18);
+  });
 
-  sb.addBlank();
+  addBlank(ws);
 
   // ── Period comparison ──────────────────────────────────────────────────────
-  const rSec1 = sb.addRow([
-    cell('PERIODESAMMENLIGNING', 'sectionHead'),
-    cell('', 'sectionHead'), cell('', 'sectionHead'), cell('', 'sectionHead'),
-  ]);
-  sb.mergeCols(rSec1, 0, NC - 1);
-
-  sb.addRow([
-    cell('',                        'colHeadL'),
-    cell(fmtPeriodLabel(period),    'colHeadC'),
-    cell(prevMonthLabel(period),    'colHeadC'),
-    cell('ENDRING',                 'colHeadR'),
+  addSectionHead(ws, 'PERIODESAMMENLIGNING', NC);
+  addColHeaders(ws, [
+    { label: '' },
+    { label: fmtPeriodLabel(period), align: 'right' },
+    { label: prevMonthLabel(period),  align: 'right' },
+    { label: 'ENDRING',               align: 'right' },
   ]);
 
   const compRows: [string, number, number][] = [
@@ -349,50 +302,40 @@ function buildSummarySheet(
   compRows.forEach(([label, c, p], i) => {
     const diff   = c - p;
     const isAlt  = i % 2 === 1;
-    const lStyle: StyleKey = isAlt ? 'dataAltL' : 'dataL';
-    const rStyle: StyleKey = isAlt ? 'dataAltR' : 'dataR';
-    const chStyle: StyleKey = diff >= 0 ? 'changePos' : 'changeNeg';
-    sb.addRow([
-      cell(label, lStyle),
-      cell(c,     rStyle),
-      cell(p,     rStyle),
-      cell(diff,  chStyle),
-    ]);
+    const chColor = diff >= 0 ? C.changePos : C.changeNeg;
+    addDataRow(ws, [
+      { value: label },
+      { value: c,    align: 'right', numFmt: FMT_NOK },
+      { value: p,    align: 'right', numFmt: FMT_NOK },
+      { value: diff, align: 'right', numFmt: '+' + FMT_NOK + ';-' + FMT_NOK, color: chColor, bold: true },
+    ], isAlt);
   });
 
-  // Count row (no currency format)
   const countDiff = curr.count - prev.count;
-  sb.addRow([
-    cell('Antall fakturaer',         'dataAltL'),
-    cell(curr.count,                 'dataAltC'),
-    cell(prev.count,                 'dataAltC'),
-    cell(countDiff >= 0 ? `+${countDiff}` : String(countDiff), 'dataAltC'),
+  addDataRow(ws, [
+    { value: 'Antall fakturaer' },
+    { value: curr.count, align: 'center', numFmt: FMT_INT },
+    { value: prev.count, align: 'center', numFmt: FMT_INT },
+    { value: countDiff >= 0 ? `+${countDiff}` : String(countDiff), align: 'center', color: countDiff >= 0 ? C.changePos : C.changeNeg, bold: true },
+  ], true);
+
+  addBlank(ws);
+
+  // ── Status ─────────────────────────────────────────────────────────────────
+  addSectionHead(ws, 'STATUS FAKTURAER', NC);
+  addColHeaders(ws, [
+    { label: 'STATUS' },
+    { label: 'ANTALL', align: 'center' },
+    { label: 'BELØP',  align: 'right' },
+    { label: '% AV TOTALT', align: 'center' },
   ]);
 
-  sb.addBlank();
-
-  // ── Status breakdown ───────────────────────────────────────────────────────
-  const rSec2 = sb.addRow([
-    cell('STATUS FAKTURAER', 'sectionHead'),
-    cell('', 'sectionHead'), cell('', 'sectionHead'), cell('', 'sectionHead'),
-  ]);
-  sb.mergeCols(rSec2, 0, NC - 1);
-
-  sb.addRow([
-    cell('STATUS',       'colHeadL'),
-    cell('ANTALL',       'colHeadC'),
-    cell('BELØP',        'colHeadR'),
-    cell('% AV TOTALT',  'colHeadC'),
-  ]);
-
-  const today    = new Date();
-  const forfalt  = fakturaer.filter(f =>
-    f.status !== 'betalt' &&
-    new Date(f.dato) < new Date(today.getTime() - 45 * 86_400_000)
+  const today   = new Date();
+  const forfalt = fakturaer.filter(f =>
+    f.status !== 'betalt' && new Date(f.dato) < new Date(today.getTime() - 45 * 86_400_000)
   );
   const ubetaltNormal = fakturaer.filter(f =>
-    f.status !== 'betalt' &&
-    new Date(f.dato) >= new Date(today.getTime() - 45 * 86_400_000)
+    f.status !== 'betalt' && new Date(f.dato) >= new Date(today.getTime() - 45 * 86_400_000)
   );
   const betalt = fakturaer.filter(f => f.status === 'betalt');
 
@@ -402,281 +345,270 @@ function buildSummarySheet(
   const total        = curr.totalBelop;
 
   const statusRows: [string, number, number, number][] = [
-    ['✓  Betalte fakturaer',    betalt.length,       betaltBelop,  total > 0 ? betaltBelop  / total : 0],
-    ['⏳  Ubetalte fakturaer',  ubetaltNormal.length, ubetaltBelop, total > 0 ? ubetaltBelop / total : 0],
-    ['⚠️  Forfalte fakturaer',  forfalt.length,       forfaltBelop, total > 0 ? forfaltBelop / total : 0],
+    ['Betalte fakturaer',   betalt.length,        betaltBelop,  total > 0 ? betaltBelop  / total : 0],
+    ['Ubetalte fakturaer',  ubetaltNormal.length, ubetaltBelop, total > 0 ? ubetaltBelop / total : 0],
+    ['Forfalte fakturaer',  forfalt.length,        forfaltBelop, total > 0 ? forfaltBelop / total : 0],
   ];
 
   statusRows.forEach(([label, count, belop, pct], i) => {
-    const isAlt: boolean = i % 2 === 1;
-    sb.addRow([
-      cell(label,  isAlt ? 'dataAltL' : 'dataL'),
-      cell(count,  isAlt ? 'dataAltC' : 'dataC'),
-      cell(belop,  isAlt ? 'dataAltR' : 'dataR'),
-      cell(pct,    isAlt ? 'pctAlt'   : 'pctData'),
-    ]);
+    addDataRow(ws, [
+      { value: label },
+      { value: count, align: 'center', numFmt: FMT_INT },
+      { value: belop, align: 'right',  numFmt: FMT_NOK },
+      { value: pct,   align: 'center', numFmt: FMT_PCT },
+    ], i % 2 === 1);
   });
 
-  sb.addRow([
-    cell('TOTALT',        'totalL'),
-    cell(curr.count,      'totalC'),
-    cell(curr.totalBelop, 'totalR'),
-    cell(1,               'pctTotal'),
+  addTotalRow(ws, [
+    { value: 'TOTALT' },
+    { value: curr.count,      align: 'center', numFmt: FMT_INT },
+    { value: curr.totalBelop, align: 'right',  numFmt: FMT_NOK },
+    { value: 1,               align: 'center', numFmt: FMT_PCT },
   ]);
 
-  sb.addBlank();
+  addBlank(ws);
 
   // ── Per kategori ───────────────────────────────────────────────────────────
-  const rSec3 = sb.addRow([
-    cell('UTGIFTER PER KATEGORI', 'sectionHead'),
-    cell('', 'sectionHead'), cell('', 'sectionHead'), cell('', 'sectionHead'),
-  ]);
-  sb.mergeCols(rSec3, 0, NC - 1);
-
-  sb.addRow([
-    cell('KATEGORI',    'colHeadL'),
-    cell('ANTALL',      'colHeadC'),
-    cell('BELØP',       'colHeadR'),
-    cell('% AV TOTALT', 'colHeadC'),
+  addSectionHead(ws, 'UTGIFTER PER KATEGORI', NC);
+  addColHeaders(ws, [
+    { label: 'KATEGORI' },
+    { label: 'ANTALL',      align: 'center' },
+    { label: 'BELØP',       align: 'right' },
+    { label: '% AV TOTALT', align: 'center' },
   ]);
 
   curr.perKategori.forEach(({ kategori, count, belop }, i) => {
-    const isAlt = i % 2 === 1;
-    const pct   = total > 0 ? belop / total : 0;
-    sb.addRow([
-      cell(kategori, isAlt ? 'dataAltL' : 'dataL'),
-      cell(count,    isAlt ? 'dataAltC' : 'dataC'),
-      cell(belop,    isAlt ? 'dataAltR' : 'dataR'),
-      cell(pct,      isAlt ? 'pctAlt'   : 'pctData'),
-    ]);
+    const pct = total > 0 ? belop / total : 0;
+    addDataRow(ws, [
+      { value: kategori },
+      { value: count, align: 'center', numFmt: FMT_INT },
+      { value: belop, align: 'right',  numFmt: FMT_NOK },
+      { value: pct,   align: 'center', numFmt: FMT_PCT },
+    ], i % 2 === 1);
   });
 
-  sb.addRow([
-    cell('TOTALT',        'totalL'),
-    cell(curr.count,      'totalC'),
-    cell(curr.totalBelop, 'totalR'),
-    cell(1,               'pctTotal'),
+  addTotalRow(ws, [
+    { value: 'TOTALT' },
+    { value: curr.count,      align: 'center', numFmt: FMT_INT },
+    { value: curr.totalBelop, align: 'right',  numFmt: FMT_NOK },
+    { value: 1,               align: 'center', numFmt: FMT_PCT },
   ]);
 
-  sb.addBlank();
+  addBlank(ws);
 
   // ── Top leverandører ───────────────────────────────────────────────────────
-  const rSec4 = sb.addRow([
-    cell('TOPP 10 LEVERANDØRER', 'sectionHead'),
-    cell('', 'sectionHead'), cell('', 'sectionHead'), cell('', 'sectionHead'),
-  ]);
-  sb.mergeCols(rSec4, 0, NC - 1);
-
-  sb.addRow([
-    cell('LEVERANDØR',   'colHeadL'),
-    cell('ANTALL',       'colHeadC'),
-    cell('BELØP',        'colHeadR'),
-    cell('GJENNOMSNITT', 'colHeadR'),
+  addSectionHead(ws, 'TOPP 10 LEVERANDØRER', NC);
+  addColHeaders(ws, [
+    { label: 'LEVERANDØR' },
+    { label: 'ANTALL',        align: 'center' },
+    { label: 'BELØP',         align: 'right' },
+    { label: 'GJENNOMSNITT',  align: 'right' },
   ]);
 
   curr.topLeverandorer.slice(0, 10).forEach(({ leverandor, count, belop }, i) => {
-    const isAlt = i % 2 === 1;
-    const avg   = count > 0 ? belop / count : 0;
-    sb.addRow([
-      cell(leverandor, isAlt ? 'dataAltL' : 'dataL'),
-      cell(count,      isAlt ? 'dataAltC' : 'dataC'),
-      cell(belop,      isAlt ? 'dataAltR' : 'dataR'),
-      cell(avg,        isAlt ? 'dataAltR' : 'dataR'),
-    ]);
+    const avg = count > 0 ? belop / count : 0;
+    addDataRow(ws, [
+      { value: leverandor },
+      { value: count, align: 'center', numFmt: FMT_INT },
+      { value: belop, align: 'right',  numFmt: FMT_NOK },
+      { value: avg,   align: 'right',  numFmt: FMT_NOK },
+    ], i % 2 === 1);
   });
-
-  sb.setCols([{ wch: 34 }, { wch: 14 }, { wch: 18 }, { wch: 18 }]);
-  return sb.build();
 }
 
 // ── SHEET 2: FAKTURAER ────────────────────────────────────────────────────────
 
 function buildInvoiceSheet(
+  wb:         ExcelJS.Workbook,
   fakturaer:  ExportFaktura[],
   includeMva: boolean,
-): XLSX.WorkSheet {
-  const sb = new SheetBuilder();
+) {
+  const ws = wb.addWorksheet('Fakturaer');
+
+  // Freeze header row
+  ws.views = [{ state: 'frozen', ySplit: 1 }];
+
+  const baseCols: Partial<ExcelJS.Column>[] = [
+    { header: '', width: 13 },
+    { header: '', width: 28 },
+    { header: '', width: 16 },
+    ...(includeMva ? [{ header: '', width: 14 }] : []),
+    { header: '', width: 20 },
+    { header: '', width: 14 },
+    { header: '', width: 14 },
+  ];
+  ws.columns = baseCols;
 
   // Header row
-  const hdrs: XLSX.CellObject[] = [
-    cell('DATO',       'colHeadL'),
-    cell('LEVERANDØR', 'colHeadL'),
-    cell('BESKRIVELSE','colHeadL'),
-    cell('BELØP',      'colHeadR'),
-    ...(includeMva ? [cell('MVA', 'colHeadR')] : []),
-    cell('KATEGORI',   'colHeadL'),
-    cell('STATUS',     'colHeadC'),
-    cell('BETALT DATO','colHeadC'),
+  const hdrCells: { label: string; align?: ExcelJS.Alignment['horizontal'] }[] = [
+    { label: 'DATO' },
+    { label: 'LEVERANDØR' },
+    { label: 'BELØP',  align: 'right' },
+    ...(includeMva ? [{ label: 'MVA', align: 'right' as const }] : []),
+    { label: 'KATEGORI' },
+    { label: 'STATUS',     align: 'center' },
+    { label: 'BETALT DATO', align: 'center' },
   ];
-  sb.addRow(hdrs);
+  addColHeaders(ws, hdrCells);
 
+  // Data rows
   fakturaer.forEach((f, i) => {
     const isAlt = i % 2 === 1;
     const paid  = f.status === 'betalt';
-    const statusStyle: StyleKey = paid
-      ? (isAlt ? 'dataAltL' : 'greenBadge')
-      : (isAlt ? 'dataAltL' : 'dataL');
 
-    sb.addRow([
-      cell(fmtDateNO(f.dato),                    isAlt ? 'dataAltL' : 'dataL'),
-      cell(f.leverandor,                          isAlt ? 'dataAltL' : 'dataL'),
-      cell(f.leverandor,                          isAlt ? 'dataAltL' : 'dataL'),
-      cell(f.belop,                               isAlt ? 'dataAltR' : 'dataR'),
-      ...(includeMva ? [cell(f.mva, isAlt ? 'dataAltR' : 'dataR')] : []),
-      cell(f.kategori,                            isAlt ? 'dataAltL' : 'dataL'),
-      cell(paid ? '✓ Betalt' : '⏳ Ubetalt',    statusStyle),
-      cell(f.betalt_dato ? fmtDateNO(f.betalt_dato) : '', isAlt ? 'dataAltC' : 'dataC'),
-    ]);
+    // Status cell gets color fill regardless of zebra
+    const statusBg    = paid ? C.green  : C.yellow;
+    const statusColor = paid ? C.greenText : C.yellowText;
+    const statusLabel = paid ? 'BETALT' : 'UBETALT';
+
+    const cells: Parameters<typeof addDataRow>[1] = [
+      { value: fmtDateNO(f.dato) },
+      { value: f.leverandor },
+      { value: f.belop, align: 'right', numFmt: FMT_NOK },
+      ...(includeMva ? [{ value: f.mva, align: 'right' as const, numFmt: FMT_NOK }] : []),
+      { value: f.kategori },
+      { value: statusLabel, align: 'center', bg: statusBg, color: statusColor, bold: true },
+      { value: f.betalt_dato ? fmtDateNO(f.betalt_dato) : '', align: 'center' },
+    ];
+
+    addDataRow(ws, cells, isAlt);
   });
 
-  // Totals row
+  // Totals
   const totalBelop = fakturaer.reduce((s, f) => s + f.belop, 0);
-  const totalMva   = fakturaer.reduce((s, f) => s + f.mva,   0);
-  sb.addRow([
-    cell('TOTALT',   'totalL'),
-    cell('',         'totalL'),
-    cell('',         'totalL'),
-    cell(totalBelop, 'totalR'),
-    ...(includeMva ? [cell(totalMva, 'totalR')] : []),
-    cell('',         'totalL'),
-    cell(`${fakturaer.filter(f=>f.status==='betalt').length}/${fakturaer.length} betalt`, 'totalC'),
-    cell('',         'totalL'),
-  ]);
-
-  const baseCols = [
-    { wch: 12 }, { wch: 26 }, { wch: 28 }, { wch: 15 },
-    { wch: 20 }, { wch: 14 }, { wch: 14 },
+  const totalMva   = fakturaer.reduce((s, f) => s + f.mva, 0);
+  type TotalCell = Parameters<typeof addTotalRow>[1][number];
+  const totalCells: TotalCell[] = [
+    { value: 'TOTALT' },
+    { value: '' },
+    { value: totalBelop, align: 'right', numFmt: FMT_NOK },
   ];
-  if (includeMva) baseCols.splice(4, 0, { wch: 12 });
-  sb.setCols(baseCols);
-
-  return sb.build();
+  if (includeMva) totalCells.push({ value: totalMva, align: 'right', numFmt: FMT_NOK });
+  totalCells.push(
+    { value: '' },
+    { value: `${fakturaer.filter(f => f.status === 'betalt').length}/${fakturaer.length} betalt`, align: 'center' },
+    { value: '' },
+  );
+  addTotalRow(ws, totalCells);
 }
 
 // ── SHEET 3: BOKFØRING ────────────────────────────────────────────────────────
 
-function buildBookkeepingSheet(fakturaer: ExportFaktura[], period: string): XLSX.WorkSheet {
-  const sb      = new SheetBuilder();
+function buildBookkeepingSheet(
+  wb:        ExcelJS.Workbook,
+  fakturaer: ExportFaktura[],
+  period:    string,
+) {
+  const ws      = wb.addWorksheet('Bokføring');
   const entries = generateBookkeepingEntries(fakturaer);
   const NC      = 7;
 
+  ws.columns = [
+    { width: 13 }, { width: 9 }, { width: 9 }, { width: 26 },
+    { width: 16 }, { width: 16 }, { width: 30 },
+  ];
+
   // Title block
-  const r0 = sb.addRow([
-    cell('BOKFØRINGSDATA — KLAR FOR IMPORT', 'titleDark'),
-    ...Array(NC - 1).fill(cell('', 'titleDark')),
-  ]);
-  sb.mergeCols(r0, 0, NC - 1);
+  addTitle(ws, 'BOKFØRINGSDATA — KLAR FOR IMPORT', NC);
 
-  const r1 = sb.addRow([
-    cell('Format: Norsk Regnskap Standard (NRS)', 'metaLabel'),
-    ...Array(NC - 1).fill(cell('', 'empty')),
-  ]);
-  sb.mergeCols(r1, 0, NC - 1);
+  const metaLines = [
+    'Format: Norsk Regnskap Standard (NRS)',
+    'Kan importeres direkte til Tripletex, Fiken og Visma.',
+    `Periode: ${fmtPeriodLabel(period)}`,
+  ];
+  metaLines.forEach(text => {
+    const row  = ws.addRow([text]);
+    const rnum = row.number;
+    merge(ws, rnum, 1, NC);
+    applyStyle(ws.getCell(rnum, 1), { sz: 11, color: C.grayText });
+    rowH(ws, rnum, 17);
+  });
 
-  const r2 = sb.addRow([
-    cell('Kan importeres direkte til Tripletex, Fiken og Visma.', 'metaLabel'),
-    ...Array(NC - 1).fill(cell('', 'empty')),
-  ]);
-  sb.mergeCols(r2, 0, NC - 1);
+  addBlank(ws);
 
-  const r3 = sb.addRow([
-    cell(`Periode: ${fmtPeriodLabel(period)}`, 'metaLabel'),
-    ...Array(NC - 1).fill(cell('', 'empty')),
-  ]);
-  sb.mergeCols(r3, 0, NC - 1);
+  // Freeze header
+  ws.views = [{ state: 'frozen', ySplit: ws.rowCount + 1 }];
 
-  sb.addBlank();
-
-  // Column headers
-  sb.addRow([
-    cell('DATO',        'colHeadL'),
-    cell('BILAG',       'colHeadC'),
-    cell('KONTO',       'colHeadC'),
-    cell('KONTONAVN',   'colHeadL'),
-    cell('DEBET',       'colHeadR'),
-    cell('KREDIT',      'colHeadR'),
-    cell('BESKRIVELSE', 'colHeadL'),
+  addColHeaders(ws, [
+    { label: 'DATO' },
+    { label: 'BILAG',     align: 'center' },
+    { label: 'KONTO',     align: 'center' },
+    { label: 'KONTONAVN' },
+    { label: 'DEBET',     align: 'right' },
+    { label: 'KREDIT',    align: 'right' },
+    { label: 'BESKRIVELSE' },
   ]);
 
   let totalDebet  = 0;
   let totalKredit = 0;
 
   entries.forEach((e, i) => {
-    const isAlt  = i % 2 === 1;
-    const dStyle: StyleKey = isAlt ? 'dataAltR' : 'dataR';
-    const lStyle: StyleKey = isAlt ? 'dataAltL' : 'dataL';
-    const cStyle: StyleKey = isAlt ? 'dataAltC' : 'dataC';
-
     const debet  = e.Debet  ? parseFloat(e.Debet.replace(/\s/g,'').replace(',','.'))  : 0;
     const kredit = e.Kredit ? parseFloat(e.Kredit.replace(/\s/g,'').replace(',','.')) : 0;
     totalDebet  += debet;
     totalKredit += kredit;
 
-    sb.addRow([
-      cell(e.Dato,      lStyle),
-      cell(e.Bilagsnr,  cStyle),
-      cell(e.Konto,     cStyle),
-      cell(ACCOUNT_NAMES[e.Konto] ?? e.Konto, lStyle),
-      cell(debet  || '', dStyle),
-      cell(kredit || '', dStyle),
-      cell(e.Tekst,     lStyle),
-    ]);
+    addDataRow(ws, [
+      { value: e.Dato },
+      { value: e.Bilagsnr, align: 'center' },
+      { value: e.Konto,    align: 'center' },
+      { value: ACCOUNT_NAMES[e.Konto] ?? e.Konto },
+      { value: debet  || null, align: 'right', numFmt: FMT_NOK },
+      { value: kredit || null, align: 'right', numFmt: FMT_NOK },
+      { value: e.Tekst },
+    ], i % 2 === 1);
   });
 
-  // Totals + balance verification
-  const balanced = Math.abs(totalDebet - totalKredit) < 0.01;
-  sb.addRow([
-    cell('',         'subTotalL'),
-    cell('',         'subTotalL'),
-    cell('',         'subTotalL'),
-    cell('TOTALT:',  'subTotalL'),
-    cell(totalDebet,  'subTotalR'),
-    cell(totalKredit, 'subTotalR'),
-    cell(balanced ? '✓ Balanserer' : '⚠️ Sjekk differanse', balanced ? 'balanceOk' : 'subTotalL'),
+  // Balance row
+  const balanced  = Math.abs(totalDebet - totalKredit) < 0.01;
+  const balanceBg = balanced ? C.green : C.yellow;
+  const balanceColor = balanced ? C.greenText : C.yellowText;
+
+  addTotalRow(ws, [
+    { value: '' },
+    { value: '' },
+    { value: '' },
+    { value: 'TOTALT:' },
+    { value: totalDebet,  align: 'right', numFmt: FMT_NOK },
+    { value: totalKredit, align: 'right', numFmt: FMT_NOK },
+    { value: balanced ? '✓ Balanserer' : '⚠️ Sjekk differanse' },
   ]);
 
-  sb.setCols([
-    { wch: 12 }, { wch: 8 }, { wch: 8 }, { wch: 24 },
-    { wch: 14 }, { wch: 14 }, { wch: 28 },
-  ]);
-
-  return sb.build();
+  // Override balance cell color
+  const lastRow = ws.lastRow!.number;
+  const balCell = ws.getCell(lastRow, NC);
+  applyStyle(balCell, {
+    bold: true, sz: 11, color: balanceColor, bg: balanceBg,
+    align: 'center', valign: 'middle', border: medBorder,
+  });
 }
 
 // ── Public: generate XLSX buffer ──────────────────────────────────────────────
 
-export function generateXLSX(
+export async function generateXLSX(
   fakturaer:     ExportFaktura[],
   prevFakturaer: ExportFaktura[],
   options:       ExportOptions,
   period:        string,
   bedriftsnavn:  string,
-): Buffer {
-  const wb = XLSX.utils.book_new();
+): Promise<Buffer> {
+  const wb = new ExcelJS.Workbook();
+  wb.creator  = 'FinanceIQ';
+  wb.created  = new Date();
+  wb.modified = new Date();
 
   if (options.includeSummary) {
-    XLSX.utils.book_append_sheet(
-      wb,
-      buildSummarySheet(fakturaer, prevFakturaer, period, bedriftsnavn),
-      'Sammendrag',
-    );
+    buildSummarySheet(wb, fakturaer, prevFakturaer, period, bedriftsnavn);
   }
 
-  XLSX.utils.book_append_sheet(
-    wb,
-    buildInvoiceSheet(fakturaer, options.includeMva),
-    'Fakturaer',
-  );
+  buildInvoiceSheet(wb, fakturaer, options.includeMva);
 
   if (options.includeBookkeeping) {
-    XLSX.utils.book_append_sheet(
-      wb,
-      buildBookkeepingSheet(fakturaer, period),
-      'Bokføring',
-    );
+    buildBookkeepingSheet(wb, fakturaer, period);
   }
 
-  return Buffer.from(XLSX.write(wb, { type: 'buffer', bookType: 'xlsx', cellStyles: true }));
+  const buf = await wb.xlsx.writeBuffer();
+  return Buffer.from(buf);
 }
 
 // ── Public: generate CSV string ───────────────────────────────────────────────
