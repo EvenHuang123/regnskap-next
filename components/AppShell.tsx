@@ -2122,6 +2122,11 @@ export default function AppShell({ user, currentMonth, initialProfil, initialMaa
           onMouseLeave={e=>{(e.currentTarget as HTMLAnchorElement).style.color=C.gray;}}>
           Leverandører
         </a>
+        <a href="/app/benchmark" className="nav-tab-btn" style={{ padding:'13px 18px', background:'transparent', border:'none', borderBottom:'2px solid transparent', color:C.gray, cursor:'pointer', fontSize:13, letterSpacing:'0.03em', transition:'all 0.15s', marginBottom:-1, display:'flex', alignItems:'center', gap:6, textDecoration:'none' }}
+          onMouseEnter={e=>{(e.currentTarget as HTMLAnchorElement).style.color=C.amber;}}
+          onMouseLeave={e=>{(e.currentTarget as HTMLAnchorElement).style.color=C.gray;}}>
+          Benchmarking
+        </a>
       </nav>
 
       {/* Content */}
