@@ -1,6 +1,8 @@
 'use client';
-import { useState, useEffect, useCallback, use } from 'react';
+import { useState, useEffect, useCallback, use, lazy, Suspense } from 'react';
+const JournalEntryModal = lazy(() => import('@/components/JournalEntryModal'));
 import { createClient } from '@/lib/supabase-browser';
+import { NORWEGIAN_ACCOUNTS, ACCOUNT_NAMES } from '@/lib/accounting';
 
 const C = {
   navy: '#141414', navyL: '#1E1E1E', navyM: '#252525',
@@ -87,6 +89,7 @@ export default function FakturaerPage({ params }: { params: Promise<{ month: str
   const [statusLoading, setStatusLoading] = useState<Record<string,boolean>>({});
   const [confirmId,     setConfirmId]     = useState<string|null>(null);
   const [deleteLoading, setDeleteLoading] = useState(false);
+  const [journalId,     setJournalId]     = useState<string|null>(null);
 
   const load = useCallback(async () => {
     setPageLoading(true); setPageError(null);
@@ -204,6 +207,15 @@ export default function FakturaerPage({ params }: { params: Promise<{ month: str
     <>
       <style>{`@keyframes spin { to { transform: rotate(360deg); } }`}</style>
 
+      {journalId && (
+        <Suspense fallback={null}>
+          <JournalEntryModal
+            faktura={fakturaer.find(f => f.id === journalId)!}
+            onClose={() => setJournalId(null)}
+          />
+        </Suspense>
+      )}
+
       {confirmId && (
         <ConfirmDialog
           leverandor={fakturaer.find(f => f.id === confirmId)?.leverandor ?? ''}
@@ -291,6 +303,17 @@ export default function FakturaerPage({ params }: { params: Promise<{ month: str
                         <div style={{ fontSize:10, color:C.grayD, textTransform:'uppercase', letterSpacing:'0.1em' }}>Kategori</div>
                         <div style={{ fontSize:14, color:C.gray }}>{f.kategori || '—'}</div>
                       </div>
+                      {(() => {
+                        const code = NORWEGIAN_ACCOUNTS[f.kategori];
+                        return code ? (
+                          <div>
+                            <div style={{ fontSize:10, color:C.grayD, textTransform:'uppercase', letterSpacing:'0.1em' }}>Konto</div>
+                            <div style={{ fontSize:13, color:C.green, fontFamily:'monospace', fontWeight:600 }}>
+                              {code} <span style={{ color:C.grayD, fontFamily:'inherit', fontWeight:400, fontSize:12 }}>— {ACCOUNT_NAMES[code] ?? ''}</span>
+                            </div>
+                          </div>
+                        ) : null;
+                      })()}
                     </div>
 
                     <div style={{ display:'flex', gap:8, flexWrap:'wrap', alignItems:'center' }}>
@@ -309,6 +332,10 @@ export default function FakturaerPage({ params }: { params: Promise<{ month: str
 
                       <Btn onClick={() => handleToggleStatus(f)} disabled={toggling || !!busy} active={isPaid}>
                         {toggling ? <><Spinner/> …</> : isPaid ? '✓ Marker som ubetalt' : 'Marker som betalt'}
+                      </Btn>
+
+                      <Btn onClick={() => setJournalId(f.id)} disabled={!!busy || toggling}>
+                        📒 Postering
                       </Btn>
 
                       <div style={{ marginLeft:'auto' }}>
