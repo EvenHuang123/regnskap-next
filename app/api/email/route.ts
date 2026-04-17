@@ -15,6 +15,7 @@
 import Anthropic from '@anthropic-ai/sdk';
 import { createClient } from '@supabase/supabase-js';
 import { NextResponse } from 'next/server';
+import { buildJournalEntry, isBalanced, NORWEGIAN_ACCOUNTS, ACCOUNT_NAMES, type ExportFaktura } from '@/lib/accounting';
 
 // Allow up to 60 seconds — Claude PDF parsing can be slow.
 export const maxDuration = 60;
@@ -70,11 +71,19 @@ interface ResendAttachment {
 }
 
 interface ParsedInvoice {
-  leverandor: string | null;
-  belop:      number | null;
-  dato:       string | null;
-  mva:        number | null;
-  kategori:   string | null;
+  leverandor:              string | null;
+  belop:                   number | null;
+  dato:                    string | null;
+  mva:                     number | null;
+  kategori:                string | null;
+  // Enhanced fields
+  net_amount:              number | null;
+  vat_rate:                number | null;
+  invoice_number:          string | null;
+  due_date:                string | null;
+  suggested_account_code:  string | null;
+  suggested_account_name:  string | null;
+  ai_confidence:           number | null;
 }
 
 // ── Helpers ───────────────────────────────────────────────────────────────────
@@ -150,25 +159,41 @@ async function parsePdf(base64: string): Promise<ParsedInvoice> {
           },
           {
             type: 'text',
-            text: `Du er en regnskapsassistent. Les denne fakturaen og trekk ut følgende felt som JSON.
+            text: `Du er en norsk regnskapsassistent. Les denne fakturaen og trekk ut følgende felt som JSON.
 
 Returner KUN gyldig JSON — ingen forklaringer, ingen markdown, ingen kodeblokker.
 
 Format:
 {
-  "leverandor": "leverandørens navn",
-  "belop": 1234.56,
+  "leverandor": "Leverandørens navn AS",
+  "belop": 1562.50,
+  "net_amount": 1250.00,
+  "mva": 312.50,
+  "vat_rate": 25,
   "dato": "YYYY-MM-DD",
-  "mva": 308.64,
-  "kategori": "en av: Husleie, Strøm, Internett, Lønn, Varekjøp, Transport, Markedsføring, Forsikring, Utstyr, Annet"
+  "due_date": "YYYY-MM-DD",
+  "invoice_number": "INV-2026-001",
+  "kategori": "en av: Husleie, Strøm, Internett, Lønn, Varekjøp, Transport, Markedsføring, Forsikring, Utstyr, Annet",
+  "suggested_account_code": "6340",
+  "suggested_account_name": "Energi / strøm",
+  "ai_confidence": 0.95
 }
 
 Regler:
-- belop er totalbeløp INKLUDERT MVA (det brukeren betaler)
-- mva er MVA-beløpet alene (0 hvis ikke oppgitt)
-- dato er fakturadatoen (ikke forfallsdato) i YYYY-MM-DD format
-- Hvis et felt ikke finnes i dokumentet, bruk null
-- kategori: velg den som passer best basert på leverandør og beskrivelse`,
+- belop = totalbeløp INKLUDERT MVA (det brukeren betaler)
+- net_amount = belop eks. MVA
+- mva = MVA-beløp alene (0 hvis ikke MVA)
+- vat_rate = MVA-sats i prosent (0, 15 eller 25)
+- dato = fakturadato (ikke forfallsdato) i YYYY-MM-DD format
+- due_date = forfallsdato i YYYY-MM-DD format (null hvis ikke oppgitt)
+- invoice_number = fakturanummer (null hvis ikke oppgitt)
+- kategori: velg den som passer best
+- suggested_account_code = NS 4102 konto som passer best:
+  Husleie→6300, Strøm/energi→6340, Internett/Telefon→6900, Lønn→5000,
+  Varekjøp→4000, Transport→6800, Markedsføring→7500, Forsikring→6860,
+  IT/programvare→6540, Utstyr→6500, Regnskap→6700, Annet→7900
+- ai_confidence = 0.0–1.0 (hvor sikker er du på konto-klassifiseringen?)
+- Hvis et felt ikke finnes i dokumentet, bruk null`,
           },
         ],
       },
@@ -317,17 +342,42 @@ async function handleWebhook(req: Request) {
   log('PDF uploaded', { path: pdfPath });
 
   // ── 8. Insert into fakturaer table ─────────────────────────────────────────
+  const belop    = parsed.belop    ?? 0;
+  const mva      = parsed.mva      ?? 0;
+  const kategori = parsed.kategori ?? 'Annet';
+
+  // Derive net_amount / vat_rate when AI didn't extract them
+  const netAmount = parsed.net_amount ?? (belop > 0 ? Math.round(belop / 1.25 * 100) / 100 : 0);
+  const vatRate   = parsed.vat_rate   ?? (mva > 0 ? 25 : 0);
+  const vatAmount = parsed.mva        ?? Math.round((belop - netAmount) * 100) / 100;
+
+  // Resolve account code: prefer AI suggestion, fall back to NORWEGIAN_ACCOUNTS map
+  const accountCode = parsed.suggested_account_code
+    ?? NORWEGIAN_ACCOUNTS[kategori]
+    ?? '7900';
+  const accountName = parsed.suggested_account_name
+    ?? ACCOUNT_NAMES[accountCode]
+    ?? kategori;
+
   const { data: inserted, error: insertErr } = await supabase
     .from('fakturaer')
     .insert({
-      user_id:   userId,
+      user_id:                userId,
       leverandor,
-      belop:     parsed.belop    ?? 0,
+      belop,
       dato,
-      mva:       parsed.mva      ?? 0,
-      kategori:  parsed.kategori ?? 'Annet',
-      pdf_url:   pdfPath,
-      status:    'ubetalt',
+      mva:                    vatAmount,
+      kategori,
+      pdf_url:                pdfPath,
+      status:                 'ubetalt',
+      // Enhanced accounting fields
+      net_amount:             netAmount,
+      vat_amount:             vatAmount,
+      vat_rate:               vatRate,
+      suggested_account_code: accountCode,
+      ai_confidence:          parsed.ai_confidence ?? 0.80,
+      invoice_number:         parsed.invoice_number ?? null,
+      due_date:               parsed.due_date ?? null,
     })
     .select('id')
     .single();
@@ -338,7 +388,55 @@ async function handleWebhook(req: Request) {
     return NextResponse.json({ error: `Database insert failed: ${insertErr?.message}` }, { status: 500 });
   }
 
-  log('Invoice saved', { invoiceId: inserted.id, userId, dato, leverandor, belop: parsed.belop });
+  log('Invoice saved', { invoiceId: inserted.id, userId, dato, leverandor, belop, accountCode });
 
-  return NextResponse.json({ success: true, invoiceId: inserted.id });
+  // ── 9. Auto-create journal entry (double-entry bookkeeping) ───────────────
+  try {
+    const faktura: ExportFaktura = {
+      id:          inserted.id,
+      leverandor,
+      belop,
+      dato,
+      mva:         vatAmount,
+      kategori,
+      status:      'ubetalt',
+      betalt_dato: null,
+    };
+
+    const entry = buildJournalEntry(faktura);
+
+    if (isBalanced(entry)) {
+      const { data: je, error: jeErr } = await supabase
+        .from('journal_entries')
+        .insert({
+          invoice_id:  inserted.id,
+          user_id:     userId,
+          entry_date:  entry.entry_date,
+          description: entry.description,
+        })
+        .select('id')
+        .single();
+
+      if (!jeErr && je) {
+        const lines = entry.lines.map(l => ({
+          journal_entry_id: je.id,
+          account_code:     l.account_code,
+          debit_amount:     l.debit_amount,
+          credit_amount:    l.credit_amount,
+          description:      l.description,
+        }));
+        await supabase.from('journal_entry_lines').insert(lines);
+        log('Journal entry created', { journalEntryId: je.id, lines: lines.length });
+      } else {
+        log('Journal entry insert failed', jeErr?.message);
+      }
+    } else {
+      log('Skipped unbalanced journal entry', { accountCode });
+    }
+  } catch (e) {
+    // Journal entry failure is non-fatal — invoice is already saved
+    log('Journal entry error (non-fatal)', e instanceof Error ? e.message : String(e));
+  }
+
+  return NextResponse.json({ success: true, invoiceId: inserted.id, accountCode });
 }

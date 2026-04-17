@@ -4,6 +4,7 @@ import dynamic from 'next/dynamic';
 const ProductTour       = dynamic(() => import('./ProductTour'),       { ssr: false });
 const ExportModal       = dynamic(() => import('./ExportModal'),       { ssr: false });
 const TutorialOverlay   = dynamic(() => import('./TutorialOverlay'),   { ssr: false });
+const ReportsPanel      = dynamic(() => import('./ReportsPanel'),      { ssr: false });
 import type { User } from '@supabase/supabase-js';
 import { createClient } from '@/lib/supabase-browser';
 import {
@@ -1932,6 +1933,7 @@ const TABS = [
   { id:'ai',         label:'AI-analyse'       },
   { id:'likviditet', label:'Likviditet'       },
   { id:'kalkulator', label:'Tåler jeg dette?' },
+  { id:'rapporter',   label:'Rapporter'        },
   { id:'history',    label:'Historikk'        },
   { id:'settings',   label:'Innstillinger'    },
 ];
@@ -2137,6 +2139,7 @@ export default function AppShell({ user, currentMonth, initialProfil, initialMaa
         {tab==='ai'         && <AIPanel       month={month} allData={allData} currentData={currentData} faste={faste} ansatte={ansatte} profil={profil}/>}
         {tab==='likviditet' && <LikviditetPanel allData={allData}/>}
         {tab==='kalkulator' && <KalkulatorPanel allData={allData} currentMonth={month}/>}
+        {tab==='rapporter'  && <ReportsPanel />}
         {tab==='history'    && <HistoryTable    allData={allData}/>}
         {tab==='settings'   && <Settings
           faste={faste} onFasteChange={handleFasteChange}
